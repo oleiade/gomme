@@ -87,11 +87,11 @@ func Newline() Parser {
 			return res
 		}
 
-		switch payload := res.Payload.(type) {
+		switch output := res.Output.(type) {
 		case rune:
-			return Success(string(payload), res.Remaining)
+			return Success(string(output), res.Remaining)
 		default:
-			return Success(res.Payload, res.Remaining)
+			return Success(res.Output, res.Remaining)
 		}
 	}
 }

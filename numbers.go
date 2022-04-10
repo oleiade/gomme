@@ -29,16 +29,16 @@ func Float() Parser {
 			return result
 		}
 
-		parsed, ok := result.Payload.(string)
+		parsed, ok := result.Output.(string)
 		if !ok {
 			err := fmt.Errorf("failed parsing floating point value; " +
-				"reason: converting Float() parser result's payload to string failed",
+				"reason: converting Float() parser result's output to string failed",
 			)
 			return Failure(NewFatalError(input, err, "float"), input)
 		}
 		if resultTest := dotParser(result.Remaining); resultTest.Err == nil {
 			if resultTest = digitsParser(resultTest.Remaining); resultTest.Err == nil {
-				parsed = parsed + "." + resultTest.Payload.(string)
+				parsed = parsed + "." + resultTest.Output.(string)
 				result = resultTest
 			}
 		}
@@ -53,7 +53,7 @@ func Float() Parser {
 			floatingPointValue = -floatingPointValue
 		}
 
-		result.Payload = floatingPointValue
+		result.Output = floatingPointValue
 
 		return result
 	}

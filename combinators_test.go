@@ -58,7 +58,7 @@ func TestChar(t *testing.T) {
 	result := parser([]rune("(foo"))
 
 	// Arrange
-	assert.Equal(t, "(", result.Payload)
+	assert.Equal(t, "(", result.Output)
 	assert.Equal(t, "foo", string(result.Remaining))
 }
 
@@ -100,7 +100,7 @@ func TestDigit(t *testing.T) {
 	// Assert
 	for i, result := range results {
 		assert.Nil(t, result.Err, "result should not hold any error")
-		assert.Equal(t, int32(i), result.Payload, "result payload should be the matching numerical character")
+		assert.Equal(t, int32(i), result.Output, "result output should be the matching numerical character")
 		assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
 	}
 }
@@ -144,7 +144,7 @@ func TestAlphaLowercaseAlphabetical(t *testing.T) {
 	// Assert
 	for i, result := range results {
 		assert.Nil(t, result.Err)
-		assert.Equal(t, rune(alpha[i]), result.Payload, "result payload should be the matching alphabetical character")
+		assert.Equal(t, rune(alpha[i]), result.Output, "result output should be the matching alphabetical character")
 		assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
 	}
 }
@@ -190,10 +190,10 @@ func TestLF(t *testing.T) {
 
 	// assert
 	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, '\n', result.Payload, "result payload should be the \\n character")
+	assert.Equal(t, '\n', result.Output, "result output should be the \\n character")
 	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
+	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
 	assert.Equal(t, "\r\n", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
@@ -215,10 +215,10 @@ func TestCR(t *testing.T) {
 
 	// assert
 	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, '\r', result.Payload, "result payload should be the \\r character")
+	assert.Equal(t, '\r', result.Output, "result output should be the \\r character")
 	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
+	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
 	assert.Equal(t, "\n", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
@@ -240,10 +240,10 @@ func TestCRLF(t *testing.T) {
 
 	// assert
 	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\r\n", result.Payload, "result payload should be the \\r\\n string")
+	assert.Equal(t, "\r\n", result.Output, "result output should be the \\r\\n string")
 	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
+	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
 	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
@@ -266,13 +266,13 @@ func TestNewline(t *testing.T) {
 
 	// assert
 	assert.Nil(t, lfResult.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\n", lfResult.Payload, "result payload should be the \\r\\n string")
+	assert.Equal(t, "\n", lfResult.Output, "result output should be the \\r\\n string")
 	assert.Equal(t, "", string(lfResult.Remaining), "result remaining should be empty")
 	assert.Nil(t, crlfResult.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\r\n", crlfResult.Payload, "result payload should be the \\r\\n string")
+	assert.Equal(t, "\r\n", crlfResult.Output, "result output should be the \\r\\n string")
 	assert.Equal(t, "", string(crlfResult.Remaining), "result remaining should be empty")
 	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Payload, "result's payload should be empty")
+	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
 	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
 }
 
@@ -292,7 +292,7 @@ func TestWhileOneOf(t *testing.T) {
 	t.Parallel()
 
 	result := TakeWhileOneOf([]rune("0123456789")...)([]rune("123abc"))
-	assert.Equal(t, "123", result.Payload)
+	assert.Equal(t, "123", result.Output)
 	assert.Equal(t, "abc", string(result.Remaining))
 }
 
@@ -313,11 +313,11 @@ func TestOptional(t *testing.T) {
 	absentResult := parser([]rune("123"))
 
 	// Assert
-	assert.Equal(t, "-", presentResult.Payload)
+	assert.Equal(t, "-", presentResult.Output)
 	assert.Equal(t, "123", string(presentResult.Remaining))
 	assert.Nil(t, presentResult.Err)
 
-	assert.Equal(t, nil, absentResult.Payload)
+	assert.Equal(t, nil, absentResult.Output)
 	assert.Equal(t, "123", string(absentResult.Remaining))
 	assert.Nil(t, absentResult.Err)
 }
@@ -338,7 +338,7 @@ func TestFloatPositiveWithDecimal(t *testing.T) {
 	result := parser([]rune("123.456"))
 
 	// Assert
-	assert.Equal(t, float64(123.456), result.Payload)
+	assert.Equal(t, float64(123.456), result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -352,7 +352,7 @@ func TestFloatNegativeWithDecimal(t *testing.T) {
 	result := parser([]rune("-123.456"))
 
 	// Assert
-	assert.Equal(t, float64(-123.456), result.Payload)
+	assert.Equal(t, float64(-123.456), result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -366,7 +366,7 @@ func TestFloatPositiveWithoutDecimal(t *testing.T) {
 	result := parser([]rune("123"))
 
 	// Assert
-	assert.Equal(t, float64(123), result.Payload)
+	assert.Equal(t, float64(123), result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -380,7 +380,7 @@ func TestFloatNegativeWithoutDecimal(t *testing.T) {
 	result := parser([]rune("-123"))
 
 	// Assert
-	assert.Equal(t, float64(-123), result.Payload)
+	assert.Equal(t, float64(-123), result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -410,7 +410,7 @@ func TestTag(t *testing.T) {
 	t.Parallel()
 
 	result := Tag("foo")([]rune("foo bar"))
-	assert.Equal(t, "foo", result.Payload)
+	assert.Equal(t, "foo", result.Output)
 	assert.Equal(t, " bar", string(result.Remaining))
 }
 
@@ -424,7 +424,7 @@ func TestAlternative(t *testing.T) {
 	t.Parallel()
 
 	result := Alternative(Tag("foo"), Tag("bar"), Tag("baz"))([]rune("bar hello"))
-	assert.Equal(t, "bar", result.Payload)
+	assert.Equal(t, "bar", result.Output)
 	assert.Equal(t, " hello", string(result.Remaining))
 }
 
@@ -444,7 +444,7 @@ func TestSpace(t *testing.T) {
 	spaceResult := parser([]rune(" foo"))
 
 	// Assert
-	assert.Equal(t, ' ', spaceResult.Payload)
+	assert.Equal(t, ' ', spaceResult.Output)
 	assert.Equal(t, "foo", string(spaceResult.Remaining))
 }
 
@@ -458,7 +458,7 @@ func TestTab(t *testing.T) {
 	spaceResult := parser([]rune("\tfoo"))
 
 	// Assert
-	assert.Equal(t, '\t', spaceResult.Payload)
+	assert.Equal(t, '\t', spaceResult.Output)
 	assert.Equal(t, "foo", string(spaceResult.Remaining))
 }
 
@@ -472,7 +472,7 @@ func TestWhitespaceSingleWhitespace(t *testing.T) {
 	spaceResult := parser([]rune(" "))
 
 	// Assert
-	assert.Equal(t, " ", spaceResult.Payload)
+	assert.Equal(t, " ", spaceResult.Output)
 	assert.Equal(t, "", string(spaceResult.Remaining))
 }
 
@@ -486,7 +486,7 @@ func TestWhitespaceMultipleWhitespaces(t *testing.T) {
 	spaceResult := parser([]rune("   "))
 
 	// Assert
-	assert.Equal(t, "   ", spaceResult.Payload)
+	assert.Equal(t, "   ", spaceResult.Output)
 	assert.Equal(t, "", string(spaceResult.Remaining))
 }
 
@@ -506,7 +506,7 @@ func TestDiscardAll(t *testing.T) {
 	result := parser([]rune("  "))
 
 	// Assert
-	assert.Equal(t, nil, result.Payload)
+	assert.Equal(t, nil, result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -525,7 +525,7 @@ func TestDiscardAllSequence(t *testing.T) {
 	result := parser([]rune("a  b"))
 
 	// Assert
-	assert.Equal(t, []interface{}{"a", "b"}, result.Payload)
+	assert.Equal(t, []interface{}{"a", "b"}, result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -539,7 +539,7 @@ func TestSequence(t *testing.T) {
 	t.Parallel()
 
 	result := Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foo bar"))
-	assert.Equal(t, []interface{}{"foo", " ", "bar"}, result.Payload)
+	assert.Equal(t, []interface{}{"foo", " ", "bar"}, result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -571,7 +571,7 @@ func TestPreceded(t *testing.T) {
 
 	// Assert
 	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Payload)
+	assert.Equal(t, "foo", result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -624,7 +624,7 @@ func TestTerminated(t *testing.T) {
 
 	// Assert
 	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Payload)
+	assert.Equal(t, "foo", result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -677,7 +677,7 @@ func TestDelimited(t *testing.T) {
 
 	// Assert
 	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Payload)
+	assert.Equal(t, "foo", result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 

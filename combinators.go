@@ -56,15 +56,15 @@ type Parser func(input []rune) Result
 
 // Result represents the result of a parser given an input
 type Result struct {
-	Payload   interface{}
+	Output    interface{}
 	Err       *Error
 	Remaining []rune
 }
 
-// Success creates a Result with a payload set from
+// Success creates a Result with a output set from
 // the result of a successful parsing.
-func Success(payload interface{}, remaining []rune) Result {
-	return Result{payload, nil, remaining}
+func Success(output interface{}, remaining []rune) Result {
+	return Result{output, nil, remaining}
 }
 
 // Failure creates a Result with an error set from
@@ -157,7 +157,7 @@ func Expect(p Parser, expected ...string) Parser {
 	}
 }
 
-// DiscardAll effectively applies a parser and discards its result (Payload),
+// DiscardAll effectively applies a parser and discards its result (Output),
 // effectively only returning the remaining.
 func DiscardAll(parser Parser) Parser {
 	return func(input []rune) Result {
@@ -167,7 +167,7 @@ func DiscardAll(parser Parser) Parser {
 			res = parser(res.Remaining)
 		}
 
-		res.Payload = nil
+		res.Output = nil
 		res.Err = nil
 
 		return res
@@ -186,8 +186,8 @@ func Sequence(parsers ...Parser) Parser {
 				return Failure(res.Err, input)
 			}
 
-			if res.Payload != nil {
-				results = append(results, res.Payload)
+			if res.Output != nil {
+				results = append(results, res.Output)
 			}
 		}
 
@@ -212,7 +212,7 @@ func Preceded(prefix, parser Parser) Parser {
 			return Failure(result.Err, input)
 		}
 
-		return Success(result.Payload, result.Remaining)
+		return Success(result.Output, result.Remaining)
 	}
 }
 
@@ -231,7 +231,7 @@ func Terminated(parser, suffix Parser) Parser {
 			return Failure(suffixResult.Err, input)
 		}
 
-		return Success(result.Payload, suffixResult.Remaining)
+		return Success(result.Output, suffixResult.Remaining)
 	}
 }
 
