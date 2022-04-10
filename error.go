@@ -39,7 +39,7 @@
 *
  */
 
-package combinators
+package gomme
 
 import (
 	"fmt"

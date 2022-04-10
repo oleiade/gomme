@@ -45,11 +45,10 @@
 // Jeffhail Benthos bloblang's parser combinator code: https://tinyurl.com/6duh2yfe.
 // Some of the APIs were modifed, some functions and methods have been added,
 // but all the credit goes to Jeff for this combinator library.
-package combinators
+package gomme
 
 import (
 	"fmt"
-	"strconv"
 )
 
 // Parser is the common signature of a parser function
@@ -72,177 +71,6 @@ func Success(payload interface{}, remaining []rune) Result {
 // the result of a failed parsing.
 func Failure(err *Error, input []rune) Result {
 	return Result{nil, err, input}
-}
-
-// Char parses a single character and matches it with
-// a provided candidate.
-func Char(character rune) Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || input[0] != character {
-			return Failure(NewError(input, string(character)), input)
-		}
-
-		return Success(string(character), input[1:])
-	}
-}
-
-// Digit parses a single numerical character: 0-9.
-func Digit() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || (input[0] < '0' || input[0] > '9') {
-			return Failure(NewError(input, "digit"), input)
-		}
-
-		// Considering runes are numerical (int32) representations
-		// of UTF-8 characters, we need to subtract the actual rune
-		// we find from the '0' rune in order to convert its actual
-		// numerical value and store it in an int.
-		return Success(input[0]-'0', input[1:])
-	}
-}
-
-// Alpha parses a single lowercase and uppercase alphabetic character: a-z, A-Z
-func Alpha() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 ||
-			(input[0] < 'a' || input[0] > 'z') &&
-				(input[0] < 'A' || input[0] > 'Z') {
-			return Failure(NewError(input, "alpha"), input)
-		}
-
-		// Considering runes are numerical (int32) representations
-		// of UTF-8 characters, we need to subtract the actual rune
-		// we find from the '0' rune in order to convert its actual
-		// numerical value and store it in an int.
-		return Success(input[0], input[1:])
-	}
-}
-
-// LF parses a line feed `\n` character.
-func LF() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || input[0] != '\n' {
-			return Failure(NewError(input, "line feed ('\\n')"), input)
-		}
-
-		return Success(input[0], input[1:])
-	}
-}
-
-// CR parses a carriage return `\r` character.
-func CR() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || input[0] != '\r' {
-			return Failure(NewError(input, "carriage return ('\\r')"), input)
-		}
-
-		return Success(input[0], input[1:])
-	}
-}
-
-// CRLF parses the string `\r\n`.
-func CRLF() Parser {
-	return func(input []rune) Result {
-		if len(input) != 2 || (input[0] != '\r' || input[1] != '\n') {
-			return Failure(NewError(input, "CRLF ('\\r\\n')"), input)
-		}
-
-		return Success(string(input[:2]), input[2:])
-	}
-}
-
-// Newline parses a newline symbol: either LF (`\n`) or CRLF (`\r\n`).
-func Newline() Parser {
-	parser := Expect(Alternative(LF(), CRLF()), "new line")
-
-	return func(input []rune) Result {
-		res := parser(input)
-		if res.Err != nil {
-			return res
-		}
-
-		switch payload := res.Payload.(type) {
-		case rune:
-			return Success(string(payload), res.Remaining)
-		default:
-			return Success(res.Payload, res.Remaining)
-		}
-	}
-}
-
-// Tag parses a provided candidate string.
-// Given a "tag" to parse, it will try to consume an exact
-// match from the input.
-func Tag(tag string) Parser {
-	termRunes := []rune(tag)
-
-	return func(input []rune) Result {
-		if len(input) < len(termRunes) {
-			return Failure(NewError(input, tag), input)
-		}
-
-		for i, c := range termRunes {
-			if input[i] != c {
-				return Failure(NewError(input, tag), input)
-			}
-		}
-
-		return Success(tag, input[len(termRunes):])
-	}
-}
-
-// Float parses a sequence of numerical characters into a float64.
-// The '.' character is used as the optional decimal delimiter. Any
-// number without a decimal part will still be parsed as a float64.
-//
-// N.B: it is not the parser's role to make sure the floating point
-// number you're attempting to parse fits into a 64 bits float.
-func Float() Parser {
-	digitsParser := TakeWhileOneOf([]rune("0123456789")...)
-	minusParser := Char('-')
-	dotParser := Char('.')
-
-	return func(input []rune) Result {
-		var negative bool
-
-		result := minusParser(input)
-		if result.Err == nil {
-			negative = true
-		}
-
-		result = Expect(digitsParser, "digits")(result.Remaining)
-		if result.Err != nil {
-			return result
-		}
-
-		parsed, ok := result.Payload.(string)
-		if !ok {
-			err := fmt.Errorf("failed parsing floating point value; " +
-				"reason: converting Float() parser result's payload to string failed",
-			)
-			return Failure(NewFatalError(input, err, "float"), input)
-		}
-		if resultTest := dotParser(result.Remaining); resultTest.Err == nil {
-			if resultTest = digitsParser(resultTest.Remaining); resultTest.Err == nil {
-				parsed = parsed + "." + resultTest.Payload.(string)
-				result = resultTest
-			}
-		}
-
-		floatingPointValue, err := strconv.ParseFloat(parsed, 64)
-		if err != nil {
-			err = fmt.Errorf("failed to parse '%v' as float; reason: %w", parsed, err)
-			return Failure(NewFatalError(input, err), input)
-		}
-
-		if negative {
-			floatingPointValue = -floatingPointValue
-		}
-
-		result.Payload = floatingPointValue
-
-		return result
-	}
 }
 
 // TakeWhileOneOf parses any number of characters present in the
@@ -327,33 +155,6 @@ func Expect(p Parser, expected ...string) Parser {
 
 		return res
 	}
-}
-
-// Space parses a space character.
-func Space() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || input[0] != ' ' {
-			return Failure(NewError(input, "space"), input)
-		}
-
-		return Success(input[0], input[1:])
-	}
-}
-
-// Tab parses a tab character.
-func Tab() Parser {
-	return func(input []rune) Result {
-		if len(input) == 0 || input[0] != '\t' {
-			return Failure(NewError(input, "tab"), input)
-		}
-
-		return Success(input[0], input[1:])
-	}
-}
-
-// Whitespace parses any number of space or tab characters.
-func Whitespace() Parser {
-	return Expect(TakeWhileOneOf([]rune(" ")...), "whitespace")
 }
 
 // DiscardAll effectively applies a parser and discards its result (Payload),
