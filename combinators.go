@@ -39,7 +39,7 @@
 *
  */
 
-// Package combinators implements a minimalistic parser combinators library.
+// Package gomme implements a minimalistic parser combinators library.
 //
 // N.B: The code in this package is mostly either copied, or very inspired by
 // Jeffhail Benthos bloblang's parser combinator code: https://tinyurl.com/6duh2yfe.
@@ -56,14 +56,14 @@ type Parser func(input []rune) Result
 
 // Result represents the result of a parser given an input
 type Result struct {
-	Output    interface{}
+	Output    any
 	Err       *Error
 	Remaining []rune
 }
 
 // Success creates a Result with a output set from
 // the result of a successful parsing.
-func Success(output interface{}, remaining []rune) Result {
+func Success(output any, remaining []rune) Result {
 	return Result{output, nil, remaining}
 }
 
@@ -105,6 +105,94 @@ func TakeWhileOneOf(collection ...rune) Parser {
 	}
 }
 
+// TakeUntil parses any number of characters until the provided parser is successful.
+// If the provided parser is not successful, the parser fails, and the entire input is
+// returned as the Result's Remaining.
+func TakeUntil(p Parser) Parser {
+	return func(input []rune) Result {
+		if len(input) == 0 {
+			return Failure(NewError(input, "take until"), input)
+		}
+
+		pos := 0
+
+		for ; pos < len(input); pos++ {
+			current := input[pos:]
+			res := p(current)
+			// if res := p(input[pos:]); res.Err == nil {
+			if res.Err == nil {
+				return Success(string(input[:pos]), input[pos:])
+			}
+
+			continue
+		}
+
+		return Failure(NewError(input, "take until"), input)
+	}
+}
+
+// Map applies a function to the result of a parser.
+func Map(p Parser, fn func(any) (any, error)) Parser {
+	return func(input []rune) Result {
+		res := p(input)
+		if res.Err != nil {
+			return res
+		}
+
+		output, err := fn(res.Output)
+		if err != nil {
+			return Failure(NewError(input, err.Error()), input)
+		}
+
+		return Success(output, res.Remaining)
+	}
+}
+
+// Pair applies two parsers and returns a Result containing a slice of
+// size 2 as its output.
+func Pair(left Parser, right Parser) Parser {
+	return func(input []rune) Result {
+		leftResult := left(input)
+		if leftResult.Err != nil {
+			return leftResult
+		}
+
+		rightResult := right(leftResult.Remaining)
+		if rightResult.Err != nil {
+			return rightResult
+		}
+
+		return Success([]any{leftResult.Output, rightResult.Output}, rightResult.Remaining)
+	}
+}
+// SeparatedPair applies two separated parsers and returns a Result containing a slice of
+// size 2 as its output. The first element of the slice is the result of the left parser,
+// and the second element is the result of the right parser. The result of the separator parser
+// is discarded.
+func SeparatedPair(left Parser, sep Parser, right Parser) Parser {
+	return func(input []rune) Result {
+		leftResult := left(input)
+		if leftResult.Err != nil {
+			return leftResult
+		}
+
+		input = leftResult.Remaining
+		sepResult := sep(input)
+		if sepResult.Err != nil {
+			return sepResult
+		}
+
+		input = sepResult.Remaining
+		rightResult := right(input)
+		if rightResult.Err != nil {
+			return rightResult
+		}
+
+		input = rightResult.Remaining
+
+		return Success([]any{leftResult.Output, rightResult.Output}, input)
+	}
+}
 // Optional applies a an optional child parser. Will return nil
 // if not successful.
 //
@@ -174,11 +262,30 @@ func DiscardAll(parser Parser) Parser {
 	}
 }
 
+// Many applies a parser repeatedly until it fails, and returns a slice of all
+// the results as the Result's Output.
+func Many(p Parser) Parser {
+	return func(input []rune) Result {
+		results := []any{}
+
+		remaining := input
+		for {
+			res := p(remaining)
+			if res.Err != nil {
+				return Success(results, remaining)
+			}
+
+			results = append(results, res.Output)
+			remaining = res.Remaining
+		}
+	}
+}
+
 // Sequence applies a sequence of parsers and returns either a
 // slice of results or an error if any parser fails.
 func Sequence(parsers ...Parser) Parser {
 	return func(input []rune) Result {
-		results := make([]interface{}, 0, len(parsers))
+		results := make([]any, 0, len(parsers))
 		res := Result{Remaining: input}
 
 		for _, parser := range parsers {

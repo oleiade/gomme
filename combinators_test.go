@@ -57,7 +57,7 @@ func TestChar(t *testing.T) {
 	// Act
 	result := parser([]rune("(foo"))
 
-	// Arrange
+	// Assert
 	assert.Equal(t, "(", result.Output)
 	assert.Equal(t, "foo", string(result.Remaining))
 }
@@ -525,7 +525,7 @@ func TestDiscardAllSequence(t *testing.T) {
 	result := parser([]rune("a  b"))
 
 	// Assert
-	assert.Equal(t, []interface{}{"a", "b"}, result.Output)
+	assert.Equal(t, []any{"a", "b"}, result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 
@@ -539,7 +539,7 @@ func TestSequence(t *testing.T) {
 	t.Parallel()
 
 	result := Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foo bar"))
-	assert.Equal(t, []interface{}{"foo", " ", "bar"}, result.Output)
+	assert.Equal(t, []any{"foo", " ", "bar"}, result.Output)
 	assert.Equal(t, "", string(result.Remaining))
 }
 

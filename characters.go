@@ -12,6 +12,16 @@ func Char(character rune) Parser {
 	}
 }
 
+// AnyChar parses any single character.
+func AnyChar() Parser {
+	return func(input []rune) Result {
+		if len(input) == 0 {
+			return Failure(NewError(input, "any character"), input)
+		}
+
+		return Success(input[0], input[1:])
+	}
+}
 // Digit parses a single numerical character: 0-9.
 func Digit() Parser {
 	return func(input []rune) Result {
@@ -69,7 +79,7 @@ func CR() Parser {
 // CRLF parses the string `\r\n`.
 func CRLF() Parser {
 	return func(input []rune) Result {
-		if len(input) != 2 || (input[0] != '\r' || input[1] != '\n') {
+		if len(input) < 2 || (input[0] != '\r' || input[1] != '\n') {
 			return Failure(NewError(input, "CRLF ('\\r\\n')"), input)
 		}
 
