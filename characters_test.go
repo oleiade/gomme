@@ -446,6 +446,164 @@ func TestDigit1(t *testing.T) {
 	}
 }
 
+func TestHexDigit0(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, string]
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:          "parsing single hex digit char from single hex digit input should succeed",
+			parser:        HexDigit0(),
+			input:         "1",
+			wantErr:       false,
+			wantOutput:    "1",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing hex digit chars from multiple hex digit input should succeed",
+			parser:        HexDigit0(),
+			input:         "1f3",
+			wantErr:       false,
+			wantOutput:    "1f3",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing hex digit chars until terminating char should succeed",
+			parser:        HexDigit0(),
+			input:         "1f3z",
+			wantErr:       false,
+			wantOutput:    "1f3",
+			wantRemaining: "z",
+		},
+		{
+			name:          "parsing an empty input should succeed",
+			parser:        HexDigit0(),
+			input:         "",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing non hex digit chars should succeed",
+			parser:        HexDigit0(),
+			input:         "ghi",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "ghi",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func TestHexDigit1(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, string]
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:          "parsing single hex digit char from single hex digit input should succeed",
+			parser:        HexDigit1(),
+			input:         "1",
+			wantErr:       false,
+			wantOutput:    "1",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing hex digit chars from multiple hex digit input should succeed",
+			parser:        HexDigit1(),
+			input:         "1f3",
+			wantErr:       false,
+			wantOutput:    "1f3",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing hex digit chars until terminating char should succeed",
+			parser:        HexDigit1(),
+			input:         "1f3ghi",
+			wantErr:       false,
+			wantOutput:    "1f3",
+			wantRemaining: "ghi",
+		},
+		{
+			name:          "parsing an empty input should fail",
+			parser:        HexDigit1(),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing input not starting with a hex digit char should fail",
+			parser:        HexDigit1(),
+			input:         "h1",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "h1",
+		},
+		{
+			name:          "parsing non hex digit chars should fail",
+			parser:        HexDigit1(),
+			input:         "ghi",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "ghi",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
 func TestAlphanumeric0(t *testing.T) {
 	t.Parallel()
 

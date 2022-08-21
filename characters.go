@@ -77,6 +77,54 @@ func Alpha1[I Bytes]() Parser[I, I] {
 	}
 }
 
+// Alphanumeric0 parses zero or more ASCII alphabetical or numerical characters: a-z, A-Z, 0-9.
+// In the cases where the input is empty, or no terminating character is found, the parser
+// returns the input as is.
+func Alphanumeric0[I Bytes]() Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Success(input, input)
+		}
+
+		lastDigitPos := 0
+		for idx, c := range input {
+			if !isAlphanumeric(c) {
+				return Success(input[:idx], input[idx:])
+			}
+
+			lastDigitPos++
+		}
+
+		return Success(input[:lastDigitPos], input[lastDigitPos:])
+	}
+}
+
+// Alphanumeric1 parses one or more alphabetical or numerical characters: a-z, A-Z, 0-9.
+// In the cases where the input doesn't hold enough data, or a terminating character
+// is found before any matching ones were, the parser returns an error result.
+func Alphanumeric1[I Bytes]() Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Failure[I, I](NewGenericError(input, "digit1"), input)
+		}
+
+		if !isAlphanumeric(rune(input[0])) {
+			return Failure[I, I](NewGenericError(input, "digit1"), input)
+		}
+
+		lastDigitPos := 1
+		for idx, c := range input[1:] {
+			if !isAlphanumeric(c) {
+				return Success(input[:idx+1], input[idx+1:])
+			}
+
+			lastDigitPos++
+		}
+
+		return Success(input[:lastDigitPos], input[lastDigitPos:])
+	}
+}
+
 // Digit0 parses zero or more ASCII numerical characters: 0-9.
 // In the cases where the input is empty, or no terminating character is found, the parser
 // returns the input as is.
@@ -125,10 +173,10 @@ func Digit1[I Bytes]() Parser[I, I] {
 	}
 }
 
-// Alphanumeric0 parses zero or more ASCII alphabetical or numerical characters: a-z, A-Z, 0-9.
+// HexDigit0 parses zero or more ASCII hexadecimal characters: a-f, A-F, 0-9.
 // In the cases where the input is empty, or no terminating character is found, the parser
 // returns the input as is.
-func Alphanumeric0[I Bytes]() Parser[I, I] {
+func HexDigit0[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
 			return Success(input, input)
@@ -136,7 +184,7 @@ func Alphanumeric0[I Bytes]() Parser[I, I] {
 
 		lastDigitPos := 0
 		for idx, c := range input {
-			if !isAlphanumeric(c) {
+			if !isHexDigit(c) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -147,22 +195,22 @@ func Alphanumeric0[I Bytes]() Parser[I, I] {
 	}
 }
 
-// Alphanumeric1 parses one or more alphabetical or numerical characters: a-z, A-Z, 0-9.
+// HexDigit1 parses one or more ASCII hexadecimal characters: a-f, A-F, 0-9.
 // In the cases where the input doesn't hold enough data, or a terminating character
 // is found before any matching ones were, the parser returns an error result.
-func Alphanumeric1[I Bytes]() Parser[I, I] {
+func HexDigit1[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
-		if !isAlphanumeric(rune(input[0])) {
+		if !isHexDigit(rune(input[0])) {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
 		lastDigitPos := 1
 		for idx, c := range input[1:] {
-			if !isAlphanumeric(c) {
+			if !isHexDigit(c) {
 				return Success(input[:idx+1], input[idx+1:])
 			}
 
@@ -271,4 +319,8 @@ func isDigit(c rune) bool {
 
 func isAlphanumeric(c rune) bool {
 	return isAlpha(c) || isDigit(c)
+}
+
+func isHexDigit(c rune) bool {
+	return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
