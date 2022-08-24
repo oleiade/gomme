@@ -95,6 +95,20 @@ func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
 	}
 }
 
+// Take returns a subset of the input of size `count`.
+func Take[I Bytes](count uint) Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 && count > 0 {
+			return Failure[I, I](NewGenericError(input, "take until"), input)
+		}
+
+		if uint(len(input)) < count {
+			return Failure[I, I](NewGenericError(input, "take"), input)
+		}
+
+		return Success(input[:count], input[count:])
+	}
+}
 // Map applies a function to the result of a parser.
 func Map[I Bytes, PO any, MO any](p Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
 	return func(input I) Result[MO, I] {

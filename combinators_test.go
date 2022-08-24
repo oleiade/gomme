@@ -151,6 +151,83 @@ func TestTakeUntil(t *testing.T) {
 	}
 }
 
+func TestTake(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "taking less than input size should succeed",
+			input: "1234567",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "7",
+		},
+		{
+			name:  "taking exact input size should succeed",
+			input: "123456",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "",
+		},
+		{
+			name:  "taking more than input size should fail",
+			input: "123",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "taking from empty input should fail",
+			input: "",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
 func TestMap(t *testing.T) {
 	t.Parallel()
 
