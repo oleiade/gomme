@@ -1485,3 +1485,61 @@ func TestInt8(t *testing.T) {
 	}
 }
 
+func TestUInt8(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, uint8]
+		input         string
+		wantErr       bool
+		wantOutput    uint8
+		wantRemaining string
+	}{
+		{
+			name:          "parsing positive integer should succeed",
+			parser:        UInt8(),
+			input:         "253",
+			wantErr:       false,
+			wantOutput:    253,
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing positive integer prefix should succeed",
+			parser:        UInt8(),
+			input:         "253abc",
+			wantErr:       false,
+			wantOutput:    253,
+			wantRemaining: "abc",
+		},
+		{
+			name:          "parsing empty input should succeed",
+			parser:        UInt8(),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
