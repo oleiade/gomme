@@ -228,6 +228,93 @@ func TestTake(t *testing.T) {
 	}
 }
 
+func TestTakeWhileMN(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "parsing input with enough characters and partially matching predicated should succeed",
+			input: "latin123",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "latin",
+			wantRemaining: "123",
+		},
+		{
+			name:  "parsing input longer than atLeast and atMost should succeed",
+			input: "lengthy",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "length",
+			wantRemaining: "y",
+		},
+		{
+			name:  "parsing input longer than atLeast and shorter than atMost should succeed",
+			input: "latin",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "latin",
+			wantRemaining: "",
+		},
+		{
+			name:  "parsing too short input should fail",
+			input: "ed",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "ed",
+		},
+		{
+			name:  "parsing with non-matching predicate should fail",
+			input: "12345",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "12345",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
 func TestMap(t *testing.T) {
 	t.Parallel()
 

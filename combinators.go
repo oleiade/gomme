@@ -109,6 +109,42 @@ func Take[I Bytes](count uint) Parser[I, I] {
 		return Success(input[:count], input[count:])
 	}
 }
+
+func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+		}
+
+		// Input is shorter than the minimum expected matching length,
+		// it is thus not possible to match it within the established
+		// constraints.
+		if uint(len(input)) < atLeast {
+			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+		}
+
+		lastValidPos := 0
+		for idx, c := range input {
+			if uint(idx) == atMost {
+				break
+			}
+
+			matched := predicate(c)
+			if !matched {
+				if uint(idx) < atLeast {
+					return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+				}
+
+				return Success(input[:idx], input[idx:])
+			}
+
+			lastValidPos++
+		}
+
+		return Success(input[:lastValidPos], input[lastValidPos:])
+	}
+}
+
 // Map applies a function to the result of a parser.
 func Map[I Bytes, PO any, MO any](p Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
 	return func(input I) Result[MO, I] {

@@ -88,7 +88,7 @@ func Alphanumeric0[I Bytes]() Parser[I, I] {
 
 		lastDigitPos := 0
 		for idx, c := range input {
-			if !isAlphanumeric(c) {
+			if !IsAlphanumeric(c) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -108,13 +108,13 @@ func Alphanumeric1[I Bytes]() Parser[I, I] {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
-		if !isAlphanumeric(rune(input[0])) {
+		if !IsAlphanumeric(rune(input[0])) {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
 		lastDigitPos := 1
 		for idx, c := range input[1:] {
-			if !isAlphanumeric(c) {
+			if !IsAlphanumeric(c) {
 				return Success(input[:idx+1], input[idx+1:])
 			}
 
@@ -184,7 +184,7 @@ func HexDigit0[I Bytes]() Parser[I, I] {
 
 		lastDigitPos := 0
 		for idx, c := range input {
-			if !isHexDigit(c) {
+			if !IsHexDigit(c) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -204,13 +204,13 @@ func HexDigit1[I Bytes]() Parser[I, I] {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
-		if !isHexDigit(rune(input[0])) {
+		if !IsHexDigit(rune(input[0])) {
 			return Failure[I, I](NewGenericError(input, "digit1"), input)
 		}
 
 		lastDigitPos := 1
 		for idx, c := range input[1:] {
-			if !isHexDigit(c) {
+			if !IsHexDigit(c) {
 				return Success(input[:idx+1], input[idx+1:])
 			}
 
@@ -309,18 +309,22 @@ func Int64[I Bytes]() Parser[I, int64] {
 	}
 }
 
-func isAlpha(c rune) bool {
+// IsAlpha returns true if the rune is an alphabetic character.
+func IsAlpha(c rune) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-func isDigit(c rune) bool {
+// IsDigit returns true if the rune is a digit.
+func IsDigit(c rune) bool {
 	return c >= '0' && c <= '9'
 }
 
-func isAlphanumeric(c rune) bool {
-	return isAlpha(c) || isDigit(c)
+// IsAlphaNumeric returns true if the rune is an alphanumeric character.
+func IsAlphanumeric(c rune) bool {
+	return IsAlpha(c) || IsDigit(c)
 }
 
-func isHexDigit(c rune) bool {
-	return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+// IsHexDigit returns true if the rune is a hexadecimal digit.
+func IsHexDigit(c rune) bool {
+	return IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
