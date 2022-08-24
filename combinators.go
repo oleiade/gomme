@@ -1,81 +1,47 @@
-/*
-* Copyright (c) 2020 Ashley Jeffs
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
- */
-/*
-*
-* k6 - a next-generation load testing tool
-* Copyright (C) 2021 Load Impact
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU Affero General Public License as
-* published by the Free Software Foundation, either version 3 of the
-* License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU Affero General Public License for more details.
-*
-* You should have received a copy of the GNU Affero General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
- */
-
-// Package gomme implements a minimalistic parser combinators library.
-//
-// N.B: The code in this package is mostly either copied, or very inspired by
-// Jeffhail Benthos bloblang's parser combinator code: https://tinyurl.com/6duh2yfe.
-// Some of the APIs were modifed, some functions and methods have been added,
-// but all the credit goes to Jeff for this combinator library.
 package gomme
 
-import (
-	"fmt"
-)
+import "fmt"
 
-// Parser is the common signature of a parser function
-type Parser func(input []rune) Result
+// FIXME: Ideally, I would want the combinators working with sequences
+// to produce somewhat detailed errors, and tell me which of the combinators failed
 
-// Result represents the result of a parser given an input
-type Result struct {
-	Output    any
-	Err       *Error
-	Remaining []rune
+// Bytes is a generic type alias for string
+type Bytes interface {
+	string
 }
+
+// Separator is a generic type alias for separator characters
+type Separator interface {
+	rune | byte | string
+}
+
+// Result is a generic type alias for Result
+type Result[Output any, Remaining Bytes] struct {
+	Output    Output
+	Err       *GenericError[Remaining]
+	Remaining Remaining
+}
+
+// Parser is a generic type alias for Parser
+type Parser[Input Bytes, Output any] func(input Input) Result[Output, Input]
 
 // Success creates a Result with a output set from
 // the result of a successful parsing.
-func Success(output any, remaining []rune) Result {
-	return Result{output, nil, remaining}
+func Success[O any, Remaining Bytes](output O, r Remaining) Result[O, Remaining] {
+	return Result[O, Remaining]{output, nil, r}
 }
 
 // Failure creates a Result with an error set from
 // the result of a failed parsing.
-func Failure(err *Error, input []rune) Result {
-	return Result{nil, err, input}
+// TODO: The Error type could be generic too
+func Failure[I Bytes, O any](err *GenericError[I], input I) Result[O, I] {
+	var output O
+	return Result[O, I]{output, err, input}
 }
 
 // TakeWhileOneOf parses any number of characters present in the
 // provided collection of runes.
-func TakeWhileOneOf(collection ...rune) Parser {
+func TakeWhileOneOf[I Bytes](collection ...rune) Parser[I, I] {
 	index := make(map[rune]struct{}, len(collection))
 
 	for _, r := range collection {
@@ -84,64 +50,112 @@ func TakeWhileOneOf(collection ...rune) Parser {
 
 	expected := fmt.Sprintf("chars(%v)", string(collection))
 
-	return func(input []rune) Result {
+	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure(NewError(input, expected), input)
+			return Failure[I, I](NewGenericError(input, expected), input)
 		}
 
 		pos := 0
 		for ; pos < len(input); pos++ {
-			_, exists := index[input[pos]]
+			_, exists := index[rune(input[pos])]
 			if !exists {
 				if pos == 0 {
-					return Failure(NewError(input, expected), input)
+					return Failure[I, I](NewGenericError(input, expected), input)
 				}
 
 				break
 			}
 		}
 
-		return Success(string(input[:pos]), input[pos:])
+		return Success(input[:pos], input[pos:])
 	}
 }
 
 // TakeUntil parses any number of characters until the provided parser is successful.
 // If the provided parser is not successful, the parser fails, and the entire input is
 // returned as the Result's Remaining.
-func TakeUntil(p Parser) Parser {
-	return func(input []rune) Result {
+func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
+	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure(NewError(input, "take until"), input)
+			return Failure[I, I](NewGenericError(input, "take until"), input)
 		}
 
 		pos := 0
-
 		for ; pos < len(input); pos++ {
 			current := input[pos:]
 			res := p(current)
-			// if res := p(input[pos:]); res.Err == nil {
 			if res.Err == nil {
-				return Success(string(input[:pos]), input[pos:])
+				return Success(input[:pos], input[pos:])
 			}
 
 			continue
 		}
 
-		return Failure(NewError(input, "take until"), input)
+		return Failure[I, I](NewGenericError(input, "take until"), input)
+	}
+}
+
+// Take returns a subset of the input of size `count`.
+func Take[I Bytes](count uint) Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 && count > 0 {
+			return Failure[I, I](NewGenericError(input, "take until"), input)
+		}
+
+		if uint(len(input)) < count {
+			return Failure[I, I](NewGenericError(input, "take"), input)
+		}
+
+		return Success(input[:count], input[count:])
+	}
+}
+
+func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+		}
+
+		// Input is shorter than the minimum expected matching length,
+		// it is thus not possible to match it within the established
+		// constraints.
+		if uint(len(input)) < atLeast {
+			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+		}
+
+		lastValidPos := 0
+		for idx, c := range input {
+			if uint(idx) == atMost {
+				break
+			}
+
+			matched := predicate(c)
+			if !matched {
+				if uint(idx) < atLeast {
+					return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+				}
+
+				return Success(input[:idx], input[idx:])
+			}
+
+			lastValidPos++
+		}
+
+		return Success(input[:lastValidPos], input[lastValidPos:])
 	}
 }
 
 // Map applies a function to the result of a parser.
-func Map(p Parser, fn func(any) (any, error)) Parser {
-	return func(input []rune) Result {
+func Map[I Bytes, PO any, MO any](p Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
+	return func(input I) Result[MO, I] {
 		res := p(input)
 		if res.Err != nil {
-			return res
+			return Failure[I, MO](NewGenericError(input, "map"), input)
 		}
 
 		output, err := fn(res.Output)
 		if err != nil {
-			return Failure(NewError(input, err.Error()), input)
+			return Failure[I, MO](NewGenericError(input, err.Error()), input)
 		}
 
 		return Success(output, res.Remaining)
@@ -150,123 +164,85 @@ func Map(p Parser, fn func(any) (any, error)) Parser {
 
 // Pair applies two parsers and returns a Result containing a slice of
 // size 2 as its output.
-func Pair(left Parser, right Parser) Parser {
-	return func(input []rune) Result {
-		leftResult := left(input)
+func Pair[I Bytes, LO, RO any, LP Parser[I, LO], RP Parser[I, RO]](leftParser LP, rightParser RP) Parser[I, PairContainer[LO, RO]] {
+	return func(input I) Result[PairContainer[LO, RO], I] {
+		leftResult := leftParser(input)
 		if leftResult.Err != nil {
-			return leftResult
+			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
 		}
 
-		rightResult := right(leftResult.Remaining)
+		rightResult := rightParser(leftResult.Remaining)
 		if rightResult.Err != nil {
-			return rightResult
+			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
 		}
 
-		return Success([]any{leftResult.Output, rightResult.Output}, rightResult.Remaining)
+		return Success(PairContainer[LO, RO]{leftResult.Output, rightResult.Output}, rightResult.Remaining)
 	}
 }
+
 // SeparatedPair applies two separated parsers and returns a Result containing a slice of
 // size 2 as its output. The first element of the slice is the result of the left parser,
 // and the second element is the result of the right parser. The result of the separator parser
 // is discarded.
-func SeparatedPair(left Parser, sep Parser, right Parser) Parser {
-	return func(input []rune) Result {
-		leftResult := left(input)
+func SeparatedPair[I Bytes, LO, RO any, S Separator, LP Parser[I, LO], SP Parser[I, S], RP Parser[I, RO]](leftParser LP, separator SP, rightParser RP) Parser[I, PairContainer[LO, RO]] {
+	return func(input I) Result[PairContainer[LO, RO], I] {
+		leftResult := leftParser(input)
 		if leftResult.Err != nil {
-			return leftResult
+			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "separated pair"), input)
 		}
 
-		input = leftResult.Remaining
-		sepResult := sep(input)
+		sepResult := separator(leftResult.Remaining)
 		if sepResult.Err != nil {
-			return sepResult
+			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "separated pair"), input)
 		}
 
-		input = sepResult.Remaining
-		rightResult := right(input)
+		rightResult := rightParser(sepResult.Remaining)
 		if rightResult.Err != nil {
-			return rightResult
+			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
 		}
 
-		input = rightResult.Remaining
-
-		return Success([]any{leftResult.Output, rightResult.Output}, input)
+		return Success(PairContainer[LO, RO]{leftResult.Output, rightResult.Output}, rightResult.Remaining)
 	}
 }
+
 // Optional applies a an optional child parser. Will return nil
 // if not successful.
 //
 // N.B: unless a FatalError is encountered, Optional will ignore
 // any parsing failures and errors.
-func Optional(p Parser) Parser {
-	return func(input []rune) Result {
+func Optional[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
+	return func(input I) Result[O, I] {
 		result := p(input)
 		if result.Err != nil && !result.Err.IsFatal() {
 			result.Err = nil
 		}
 
-		return result
+		return Success(result.Output, result.Remaining)
 	}
 }
 
-// Alternative applies a list of parsers one by one until one succeeds.
-func Alternative(parsers ...Parser) Parser {
-	return func(input []rune) Result {
-		var err *Error
-
+// Alternative tests a list of parsers in order, one by one, until one
+// succeeds.
+//
+// If none of the parsers succeed, this combinator produces an error Result.
+func Alternative[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, O] {
+	return func(input I) Result[O, I] {
 		for _, p := range parsers {
 			res := p(input)
-			if res.Err == nil || res.Err.IsFatal() {
+			if res.Err == nil {
 				return res
 			}
-
-			if err == nil || len(err.Input) > len(res.Err.Input) {
-				err = res.Err
-			} else if len(err.Input) == len(res.Err.Input) {
-				err.Add(res.Err)
-			}
 		}
 
-		return Failure(err, input)
-	}
-}
-
-// Expect applies a parser and, if an error is returned, the list of expected
-// candidates is replaced with the given strings. This is useful for providing
-// better context to users.
-func Expect(p Parser, expected ...string) Parser {
-	return func(input []rune) Result {
-		res := p(input)
-		if res.Err != nil && !res.Err.IsFatal() {
-			res.Err.Expected = expected
-		}
-
-		return res
-	}
-}
-
-// DiscardAll effectively applies a parser and discards its result (Output),
-// effectively only returning the remaining.
-func DiscardAll(parser Parser) Parser {
-	return func(input []rune) Result {
-		res := parser(input)
-
-		for res.Err == nil {
-			res = parser(res.Remaining)
-		}
-
-		res.Output = nil
-		res.Err = nil
-
-		return res
+		return Failure[I, O](NewGenericError(input, "alternative"), input)
 	}
 }
 
 // Many applies a parser repeatedly until it fails, and returns a slice of all
 // the results as the Result's Output.
-func Many(p Parser) Parser {
-	return func(input []rune) Result {
-		results := []any{}
+func Many[I Bytes, O any](p Parser[I, O]) Parser[I, []O] {
+	return func(input I) Result[[]O, I] {
+		results := []O{}
 
 		remaining := input
 		for {
@@ -283,22 +259,22 @@ func Many(p Parser) Parser {
 
 // Sequence applies a sequence of parsers and returns either a
 // slice of results or an error if any parser fails.
-func Sequence(parsers ...Parser) Parser {
-	return func(input []rune) Result {
-		results := make([]any, 0, len(parsers))
-		res := Result{Remaining: input}
+func Sequence[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, []O] {
+	return func(input I) Result[[]O, I] {
+		remaining := input
+		outputs := make([]O, 0, len(parsers))
 
 		for _, parser := range parsers {
-			if res = parser(res.Remaining); res.Err != nil {
-				return Failure(res.Err, input)
+			res := parser(remaining)
+			if res.Err != nil {
+				return Failure[I, []O](res.Err, input)
 			}
 
-			if res.Output != nil {
-				results = append(results, res.Output)
-			}
+			outputs = append(outputs, res.Output)
+			remaining = res.Remaining
 		}
 
-		return Success(results, res.Remaining)
+		return Success(outputs, remaining)
 	}
 }
 
@@ -307,16 +283,16 @@ func Sequence(parsers ...Parser) Parser {
 //
 // Preceded is effectively equivalent to applying DiscardAll(prefix),
 // and then applying the main parser.
-func Preceded(prefix, parser Parser) Parser {
-	return func(input []rune) Result {
+func Preceded[I Bytes, OP, O any](prefix Parser[I, OP], parser Parser[I, O]) Parser[I, O] {
+	return func(input I) Result[O, I] {
 		prefixResult := prefix(input)
 		if prefixResult.Err != nil {
-			return prefixResult
+			return Failure[I, O](prefixResult.Err, input)
 		}
 
 		result := parser(prefixResult.Remaining)
 		if result.Err != nil {
-			return Failure(result.Err, input)
+			return Failure[I, O](result.Err, input)
 		}
 
 		return Success(result.Output, result.Remaining)
@@ -326,16 +302,16 @@ func Preceded(prefix, parser Parser) Parser {
 // Terminated parses a result from the main parser, it then
 // parses the result from the suffix parser and discards it; only
 // returning the result of the main parser.
-func Terminated(parser, suffix Parser) Parser {
-	return func(input []rune) Result {
+func Terminated[I Bytes, O, OS any](parser Parser[I, O], suffix Parser[I, OS]) Parser[I, O] {
+	return func(input I) Result[O, I] {
 		result := parser(input)
 		if result.Err != nil {
-			return result
+			return Failure[I, O](result.Err, input)
 		}
 
 		suffixResult := suffix(result.Remaining)
 		if suffixResult.Err != nil {
-			return Failure(suffixResult.Err, input)
+			return Failure[I, O](suffixResult.Err, input)
 		}
 
 		return Success(result.Output, suffixResult.Remaining)
@@ -345,8 +321,47 @@ func Terminated(parser, suffix Parser) Parser {
 // Delimited parses and discards the result from the prefix parser, then
 // parses the result of the main parser, and finally parses and discards
 // the result of the suffix parser.
-func Delimited(prefix, parser, suffix Parser) Parser {
-	return func(input []rune) Result {
+func Delimited[I Bytes, OP, O, OS any](prefix Parser[I, OP], parser Parser[I, O], suffix Parser[I, OS]) Parser[I, O] {
+	return func(input I) Result[O, I] {
 		return Terminated(Preceded(prefix, parser), suffix)(input)
+	}
+}
+
+// Peek tries to apply the provided parser without consuming any input.
+// It effectively allows to look ahead in the input.
+func Peek[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
+	return func(input I) Result[O, I] {
+		result := p(input)
+		if result.Err != nil {
+			return Failure[I, O](result.Err, input)
+		}
+
+		return Success(result.Output, input)
+	}
+}
+
+// Recognize returns the consumed input as the produced value when
+// the provided parser succeeds.
+func Recognize[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
+	return func(input I) Result[I, I] {
+		result := p(input)
+		if result.Err != nil {
+			return Failure[I, I](result.Err, input)
+		}
+
+		return Success(input[:len(input)-len(result.Remaining)], result.Remaining)
+	}
+}
+
+// Assign returns the provided value if the parser succeeds, otherwise
+// it returns an error result.
+func Assign[I Bytes, O1, O2 any](value O1, p Parser[I, O2]) Parser[I, O1] {
+	return func(input I) Result[O1, I] {
+		result := p(input)
+		if result.Err != nil {
+			return Failure[I, O1](result.Err, input)
+		}
+
+		return Success(value, result.Remaining)
 	}
 }

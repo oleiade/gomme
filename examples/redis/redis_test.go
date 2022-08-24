@@ -12,10 +12,12 @@ import (
 )
 
 func TestParseRESPMessage(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		input string
 	}
-	tests := []struct {
+	testCases := []struct {
 		name    string
 		args    args
 		want    RESPMessage
@@ -356,6 +358,7 @@ func TestParseRESPMessage(t *testing.T) {
 						{
 							Kind: ErrorKind,
 							Error: &ErrorStringMessage{
+								Kind:    "ERR",
 								Message: "Error Message",
 							},
 						},
@@ -386,15 +389,19 @@ func TestParseRESPMessage(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseRESPMessage(tt.args.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseRESPMessage() error = %v, wantErr %v", err, tt.wantErr)
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ParseRESPMessage(tc.args.input)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("ParseRESPMessage() error = %v, wantErr %v", err, tc.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ParseRESPMessage() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("ParseRESPMessage() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -407,20 +414,20 @@ func BenchmarkParseMessage(b *testing.B) {
 		size string
 	}{
 		{"simple_string", "+OK\r\n", "2"},
-		{"simple_string", simpleStringProducer(128 * Bytes), "128b"},
+		{"simple_string", simpleStringProducer(128 * Byte), "128b"},
 		{"simple_string", simpleStringProducer(1 * KiloBytes), "1kb"},
 		{"simple_string", simpleStringProducer(1 * MegaBytes), "1mb"},
 		{"error_string", "-Error\r\n", "5"},
-		{"error_string", errorStringProducer(128 * Bytes), "128b"},
+		{"error_string", errorStringProducer(128 * Byte), "128b"},
 		{"error_string", errorStringProducer(1 * KiloBytes), "1kb"},
 		{"integer", ":1\r\n", "1"},
 		{"integer", ":9,223,372,036,854,775,807\r\n", "biggest integer"},
 		{"integer", ":-9223372036854775808\r\n", "smallest integer"},
-		{"bulk_string", bulkStringProducer(128 * Bytes), "128b"},
+		{"bulk_string", bulkStringProducer(128 * Byte), "128b"},
 		{"bulk_string", bulkStringProducer(1 * KiloBytes), "1kb"},
 		{"bulk_string", bulkStringProducer(1 * MegaBytes), "1mb"},
 		{"bulk_string", bulkStringProducer(512 * MegaBytes), "512mb"},
-		{"array", arrayProducer(10000, 128*Bytes), "10000 * 128b"},
+		{"array", arrayProducer(10000, 128*Byte), "10000 * 128b"},
 		{"array", arrayProducer(1000, 1*KiloBytes), "1000 * 1kb"},
 		{"array", arrayProducer(100, 1*MegaBytes), "100 * 1mb"},
 	}
@@ -428,6 +435,7 @@ func BenchmarkParseMessage(b *testing.B) {
 	for _, tt := range benchmarks {
 		b.Run(fmt.Sprintf("%s_with_size_%s", tt.kind, tt.size), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
+				//nolint:errcheck,gosec
 				ParseRESPMessage(tt.data)
 			}
 		})
@@ -435,8 +443,8 @@ func BenchmarkParseMessage(b *testing.B) {
 }
 
 const (
-	Bytes     = 1
-	KiloBytes = Bytes * 1024
+	Byte      = 1
+	KiloBytes = Byte * 1024
 	MegaBytes = KiloBytes * 1024
 	GigaBytes = MegaBytes * 1024
 	TeraBytes = GigaBytes * 1024

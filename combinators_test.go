@@ -1,739 +1,1377 @@
-/*
-* Copyright (c) 2020 Ashley Jeffs
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
- */
-/*
-*
-* k6 - a next-generation load testing tool
-* Copyright (C) 2021 Load Impact
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU Affero General Public License as
-* published by the Free Software Foundation, either version 3 of the
-* License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU Affero General Public License for more details.
-*
-* You should have received a copy of the GNU Affero General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
- */
 package gomme
 
 import (
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChar(t *testing.T) {
+func TestTakeWhileOneOf(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Char('(')
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abc123",
+			args: args{
+				p: TakeWhileOneOf('a', 'b', 'c'),
+			},
+			wantErr:       false,
+			wantOutput:    "abc",
+			wantRemaining: "123",
+		},
+		{
+			name:  "no match should fail",
+			input: "123",
+			args: args{
+				p: TakeWhileOneOf('a', 'b', 'c'),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: TakeWhileOneOf('a', 'b', 'c'),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("(foo"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.Equal(t, "(", result.Output)
-	assert.Equal(t, "foo", string(result.Remaining))
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
 }
 
-func TestCharFailsOnNotFoundChar(t *testing.T) {
+func TestTakeUntil(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Char('(')
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abc123",
+			args: args{
+				p: TakeUntil(Digit1()),
+			},
+			wantErr:       false,
+			wantOutput:    "abc",
+			wantRemaining: "123",
+		},
+		{
+			name:  "immediately matching parser should succeed",
+			input: "123",
+			args: args{
+				p: TakeUntil(Digit1()),
+			},
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "no match should fail",
+			input: "abcdef",
+			args: args{
+				p: TakeUntil(Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "abcdef",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: TakeUntil(Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("*foo"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Arrange
-	assert.NotNil(t, result.Err)
-	assert.Nil(t, result.Err.Err) // A parsing error embeddeds no underlying errors
-	assert.Equal(t, "*foo", string(result.Err.Input))
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "(", result.Err.Expected[0])
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func BenchmarkChar(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Char('-')([]rune("-"))
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestDigit(t *testing.T) {
+func TestTake(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Digit()
-
-	// Act
-	results := make([]Result, 10)
-	for i := 0; i < 10; i++ {
-		results[i] = parser([]rune(strconv.Itoa(i)))
+	type args struct {
+		p Parser[string, string]
 	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "taking less than input size should succeed",
+			input: "1234567",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "7",
+		},
+		{
+			name:  "taking exact input size should succeed",
+			input: "123456",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "",
+		},
+		{
+			name:  "taking more than input size should fail",
+			input: "123",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "taking from empty input should fail",
+			input: "",
+			args: args{
+				p: Take(6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Assert
-	for i, result := range results {
-		assert.Nil(t, result.Err, "result should not hold any error")
-		assert.Equal(t, int32(i), result.Output, "result output should be the matching numerical character")
-		assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestDigitFailsOnOutOfBoundValues(t *testing.T) {
+func TestTakeWhileMN(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Digit()
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "parsing input with enough characters and partially matching predicated should succeed",
+			input: "latin123",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "latin",
+			wantRemaining: "123",
+		},
+		{
+			name:  "parsing input longer than atLeast and atMost should succeed",
+			input: "lengthy",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "length",
+			wantRemaining: "y",
+		},
+		{
+			name:  "parsing input longer than atLeast and shorter than atMost should succeed",
+			input: "latin",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "latin",
+			wantRemaining: "",
+		},
+		{
+			name:  "parsing too short input should fail",
+			input: "ed",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "ed",
+		},
+		{
+			name:  "parsing with non-matching predicate should fail",
+			input: "12345",
+			args: args{
+				p: TakeWhileMN(3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "12345",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	tooLowResult := parser([]rune("/"))  // ASCII character 47 < '0' (character 48)
-	tooHighResult := parser([]rune(":")) // ASCII character 58 > '9' (character 57)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.NotNil(t, tooLowResult.Err, "result should hold an error")
-	assert.NotNil(t, tooHighResult.Err, "result should hold an error")
-	assert.Equal(t, "/", string(tooLowResult.Remaining), "result should return the input as remaining")
-	assert.Equal(t, ":", string(tooHighResult.Remaining), "result should return the input as remaining")
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func BenchmarkDigit(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Digit()([]rune("9"))
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestAlphaLowercaseAlphabetical(t *testing.T) {
+func TestMap(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Alpha()
-
-	// Act
-	alpha := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	results := make([]Result, len(alpha))
-	for i, a := range alpha {
-		results[i] = parser([]rune{a})
+	type TestStruct struct {
+		Foo int
+		Bar string
 	}
 
-	// Assert
-	for i, result := range results {
-		assert.Nil(t, result.Err)
-		assert.Equal(t, rune(alpha[i]), result.Output, "result output should be the matching alphabetical character")
-		assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
+	type args struct {
+		parser Parser[string, TestStruct]
+	}
+	testCases := []struct {
+		name          string
+		input         string
+		args          args
+		wantErr       bool
+		wantOutput    TestStruct
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "1abc\r\n",
+			args: args{
+				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+					left, _ := strconv.Atoi(p.Left)
+					return TestStruct{
+						Foo: left,
+						Bar: p.Right,
+					}, nil
+				}),
+			},
+			wantErr: false,
+			wantOutput: TestStruct{
+				Foo: 1,
+				Bar: "abc",
+			},
+			wantRemaining: "\r\n",
+		},
+		{
+			name:  "failing parser should fail",
+			input: "abc\r\n",
+			args: args{
+				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+					left, _ := strconv.Atoi(p.Left)
+
+					return TestStruct{
+						Foo: left,
+						Bar: p.Right,
+					}, nil
+				}),
+			},
+			wantErr:       true,
+			wantOutput:    TestStruct{},
+			wantRemaining: "abc\r\n",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+					left, _ := strconv.Atoi(p.Left)
+
+					return TestStruct{
+						Foo: left,
+						Bar: p.Right,
+					}, nil
+				}),
+			},
+			wantErr:       true,
+			wantOutput:    TestStruct{},
+			wantRemaining: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestAlphaFailsOnOutOfBoundValues(t *testing.T) {
+func TestPair(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Alpha()
+	type args struct {
+		leftParser  Parser[string, string]
+		rightParser Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    PairContainer[string, string]
+		wantRemaining string
+	}{
+		{
+			name:  "matching parsers should succeed",
+			input: "1abc\r\n",
+			args: args{
+				leftParser:  Digit1(),
+				rightParser: TakeUntil(CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    PairContainer[string, string]{"1", "abc"},
+			wantRemaining: "\r\n",
+		},
+		{
+			name:  "matching left parser, failing right parser, should fail",
+			input: "1abc",
+			args: args{
+				leftParser:  Digit1(),
+				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "1abc",
+		},
+		{
+			name:  "failing left parser, matching right parser, should fail",
+			input: "adef",
+			args: args{
+				leftParser:  Digit1(),
+				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "adef",
+		},
+		{
+			name:  "failing left parser, failing right parser, should fail",
+			input: "123",
+			args: args{
+				leftParser:  Digit1(),
+				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "123",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	lowerBoundResult := parser([]rune("@"))              // ASCII character 64 < 'A' (character 65)
-	intermediateLowerBoundResult := parser([]rune("["))  // ASCII character 91 > 'Z' (character 90)
-	intermediateHigherBoundResult := parser([]rune("`")) // ASCII character 96 < 'a' (character 97)
-	higherBoundResult := parser([]rune("{"))             // ASCII character 123 > 'z' (character 122)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.NotNil(t, lowerBoundResult.Err, "result should hold an error")
-	assert.NotNil(t, intermediateLowerBoundResult.Err, "result should hold an error")
-	assert.NotNil(t, intermediateHigherBoundResult.Err, "result should hold an error")
-	assert.NotNil(t, higherBoundResult.Err, "result should hold an error")
-	assert.Equal(t, "@", string(lowerBoundResult.Remaining), "result should return the input as remaining")
-	assert.Equal(t, "[", string(intermediateLowerBoundResult.Remaining), "result should return the input as remaining")
-	assert.Equal(t, "`", string(intermediateHigherBoundResult.Remaining), "result should return the input as remaining")
-	assert.Equal(t, "{", string(higherBoundResult.Remaining), "result should return the input as remaining")
-}
+			parser := Pair(tc.args.leftParser, tc.args.rightParser)
 
-func BenchmarkAlpha(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Alpha()([]rune("z"))
+			gotResult := parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestLF(t *testing.T) {
+func TestSeparatedPair(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := LF()
-
-	// Act
-	result := parser([]rune("\n"))
-	failingResult := parser([]rune("\r\n"))
-
-	// assert
-	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, '\n', result.Output, "result output should be the \\n character")
-	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
-	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
-	assert.Equal(t, "\r\n", string(failingResult.Remaining), "result's remaining should contain the input")
-}
-
-func BenchmarkLF(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		LF()([]rune("\n"))
+	type args struct {
+		leftParser      Parser[string, string]
+		separatorParser Parser[string, rune]
+		rightParser     Parser[string, string]
 	}
-}
-
-func TestCR(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := CR()
-
-	// Act
-	result := parser([]rune("\r"))
-	failingResult := parser([]rune("\n"))
-
-	// assert
-	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, '\r', result.Output, "result output should be the \\r character")
-	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
-	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
-	assert.Equal(t, "\n", string(failingResult.Remaining), "result's remaining should contain the input")
-}
-
-func BenchmarkCR(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		CR()([]rune("\r"))
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    PairContainer[string, string]
+		wantRemaining string
+	}{
+		// { true, true, true }
+		{
+			name:  "matching parsers should succeed",
+			input: "1|abc\r\n",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeUntil(CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    PairContainer[string, string]{"1", "abc"},
+			wantRemaining: "\r\n",
+		},
+		// { true, true, false }
+		{
+			name:  "matching left parser, matching separator, failing right parser, should fail",
+			input: "1|abc",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "1|abc",
+		},
+		// { true, false, true }
+		{
+			name:  "matching left parser, failing separator, matching right parser, should fail",
+			input: "1^abc",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('a', 'b', 'c'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "1^abc",
+		},
+		// { true, false, false }
+		{
+			name:  "matching left parser, failing separator, failing right parser, should fail",
+			input: "1^abc",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "1^abc",
+		},
+		// { false, true, true }
+		{
+			name:  "failing left parser, matching separator, matching right parser, should fail",
+			input: "a|def",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "a|def",
+		},
+		// { false, true, false }
+		{
+			name:  "failing left parser, matching separator, failing right parser, should fail",
+			input: "a|123",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "a|123",
+		},
+		// { false, false, true }
+		{
+			name:  "failing left parser, failing separator, matching right parser, should fail",
+			input: "a^def",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "a^def",
+		},
+		// { false, false, false }
+		{
+			name:  "failing left parser, failing separator, failing right parser, should fail",
+			input: "a^123",
+			args: args{
+				leftParser:      Digit1(),
+				separatorParser: Char('|'),
+				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+			},
+			wantErr:       true,
+			wantOutput:    PairContainer[string, string]{},
+			wantRemaining: "a^123",
+		},
 	}
-}
+	for _, tc := range testCases {
+		tc := tc
 
-func TestCRLF(t *testing.T) {
-	t.Parallel()
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Arrange
-	parser := CRLF()
+			parser := SeparatedPair(tc.args.leftParser, tc.args.separatorParser, tc.args.rightParser)
 
-	// Act
-	result := parser([]rune("\r\n"))
-	failingResult := parser([]rune("\r"))
+			gotResult := parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-	// assert
-	assert.Nil(t, result.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\r\n", result.Output, "result output should be the \\r\\n string")
-	assert.Equal(t, "", string(result.Remaining), "result remaining should be empty")
-	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
-	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
-}
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
 
-func BenchmarkCRLF(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		CRLF()([]rune("\r\n"))
-	}
-}
-
-func TestNewline(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Newline()
-
-	// Act
-	lfResult := parser([]rune("\n"))
-	crlfResult := parser([]rune("\r\n"))
-	failingResult := parser([]rune("\r"))
-
-	// assert
-	assert.Nil(t, lfResult.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\n", lfResult.Output, "result output should be the \\r\\n string")
-	assert.Equal(t, "", string(lfResult.Remaining), "result remaining should be empty")
-	assert.Nil(t, crlfResult.Err, "result shouldn't hold an error")
-	assert.Equal(t, "\r\n", crlfResult.Output, "result output should be the \\r\\n string")
-	assert.Equal(t, "", string(crlfResult.Remaining), "result remaining should be empty")
-	assert.NotNil(t, failingResult.Err, "result should hold an error")
-	assert.Equal(t, nil, failingResult.Output, "result's output should be empty")
-	assert.Equal(t, "\r", string(failingResult.Remaining), "result's remaining should contain the input")
-}
-
-func BenchmarkNewline_LF(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Newline()([]rune("\n"))
-	}
-}
-
-func BenchmarkNewline_CRLF(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Newline()([]rune("\r\n"))
-	}
-}
-
-func TestWhileOneOf(t *testing.T) {
-	t.Parallel()
-
-	result := TakeWhileOneOf([]rune("0123456789")...)([]rune("123abc"))
-	assert.Equal(t, "123", result.Output)
-	assert.Equal(t, "abc", string(result.Remaining))
-}
-
-func BenchmarkTakeWhileOneOf(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		TakeWhileOneOf([]rune("0123")...)([]rune(strings.Repeat("0123", 1024)))
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestOptional(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Optional(Char('-'))
-
-	// Act
-	presentResult := parser([]rune("-123"))
-	absentResult := parser([]rune("123"))
-
-	// Assert
-	assert.Equal(t, "-", presentResult.Output)
-	assert.Equal(t, "123", string(presentResult.Remaining))
-	assert.Nil(t, presentResult.Err)
-
-	assert.Equal(t, nil, absentResult.Output)
-	assert.Equal(t, "123", string(absentResult.Remaining))
-	assert.Nil(t, absentResult.Err)
-}
-
-func BenchmarkOptional(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Optional(Char('-'))([]rune("-123"))
+	type args struct {
+		p Parser[string, string]
 	}
-}
-
-func TestFloatPositiveWithDecimal(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Float()
-
-	// Act
-	result := parser([]rune("123.456"))
-
-	// Assert
-	assert.Equal(t, float64(123.456), result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func TestFloatNegativeWithDecimal(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Float()
-
-	// Act
-	result := parser([]rune("-123.456"))
-
-	// Assert
-	assert.Equal(t, float64(-123.456), result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func TestFloatPositiveWithoutDecimal(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Float()
-
-	// Act
-	result := parser([]rune("123"))
-
-	// Assert
-	assert.Equal(t, float64(123), result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func TestFloatNegativeWithoutDecimal(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Float()
-
-	// Act
-	result := parser([]rune("-123"))
-
-	// Assert
-	assert.Equal(t, float64(-123), result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func TestFloatInvalidNumberFormat(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Float()
-
-	// Act
-	result := parser([]rune("foo.123"))
-
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "digits", result.Err.Expected[0])
-	assert.Equal(t, "foo.123", string(result.Err.Input))
-}
-
-func BenchmarkFloat(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Float()([]rune("1234567890.0987654321"))
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "\r\n123",
+			args: args{
+				p: Optional(CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    "\r\n",
+			wantRemaining: "123",
+		},
+		{
+			name:  "no match should succeed",
+			input: "123",
+			args: args{
+				p: Optional(CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "empty input should succeed",
+			input: "",
+			args: args{
+				p: Optional(CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
 	}
-}
+	for _, tc := range testCases {
+		tc := tc
 
-func TestTag(t *testing.T) {
-	t.Parallel()
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	result := Tag("foo")([]rune("foo bar"))
-	assert.Equal(t, "foo", result.Output)
-	assert.Equal(t, " bar", string(result.Remaining))
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func BenchmarkTag(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Tag("foo")([]rune("foobar"))
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestAlternative(t *testing.T) {
 	t.Parallel()
 
-	result := Alternative(Tag("foo"), Tag("bar"), Tag("baz"))([]rune("bar hello"))
-	assert.Equal(t, "bar", result.Output)
-	assert.Equal(t, " hello", string(result.Remaining))
-}
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "head matching parser should succeed",
+			input: "123",
+			args: args{
+				p: Alternative(Digit1(), Alpha0()),
+			},
+			wantErr:       false,
+			wantOutput:    "123",
+			wantRemaining: "",
+		},
+		{
+			name:  "matching parser should succeed",
+			input: "1",
+			args: args{
+				p: Alternative(Digit1(), Alpha0()),
+			},
+			wantErr:       false,
+			wantOutput:    "1",
+			wantRemaining: "",
+		},
+		{
+			name:  "no matching parser should fail",
+			input: "$%^*",
+			args: args{
+				p: Alternative(Digit1(), Alpha1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "$%^*",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Alternative(Digit1(), Alpha1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-func BenchmarkAlternative(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Alternative(Tag("foo"), Tag("bar"), Tag("baz"))([]rune("baz world bonjour"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
-func TestSpace(t *testing.T) {
+func TestMany(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Space()
-
-	// Act
-	spaceResult := parser([]rune(" foo"))
-
-	// Assert
-	assert.Equal(t, ' ', spaceResult.Output)
-	assert.Equal(t, "foo", string(spaceResult.Remaining))
-}
-
-func TestTab(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Tab()
-
-	// Act
-	spaceResult := parser([]rune("\tfoo"))
-
-	// Assert
-	assert.Equal(t, '\t', spaceResult.Output)
-	assert.Equal(t, "foo", string(spaceResult.Remaining))
-}
-
-func TestWhitespaceSingleWhitespace(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Whitespace()
-
-	// Act
-	spaceResult := parser([]rune(" "))
-
-	// Assert
-	assert.Equal(t, " ", spaceResult.Output)
-	assert.Equal(t, "", string(spaceResult.Remaining))
-}
-
-func TestWhitespaceMultipleWhitespaces(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Whitespace()
-
-	// Act
-	spaceResult := parser([]rune("   "))
-
-	// Assert
-	assert.Equal(t, "   ", spaceResult.Output)
-	assert.Equal(t, "", string(spaceResult.Remaining))
-}
-
-func BenchmarkWhitespace(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Whitespace()([]rune("     "))
+	type args struct {
+		p Parser[string, []rune]
 	}
-}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    []rune
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "###",
+			args: args{
+				p: Many(Char('#')),
+			},
+			wantErr:       false,
+			wantOutput:    []rune{'#', '#', '#'},
+			wantRemaining: "",
+		},
+		{
+			name:  "no match should succeed",
+			input: "abc",
+			args: args{
+				p: Many(Char('#')),
+			},
+			wantErr:       false,
+			wantOutput:    []rune{},
+			wantRemaining: "abc",
+		},
+		{
+			name:  "empty input should succeed",
+			input: "",
+			args: args{
+				p: Many(Char('#')),
+			},
+			wantErr:       false,
+			wantOutput:    []rune{},
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-func TestDiscardAll(t *testing.T) {
-	t.Parallel()
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Arrange
-	parser := DiscardAll(Whitespace())
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-	// Act
-	result := parser([]rune("  "))
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
 
-	// Assert
-	assert.Equal(t, nil, result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func TestDiscardAllSequence(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	whitespace := DiscardAll(Whitespace())
-	parser := Sequence(
-		Char('a'),
-		whitespace,
-		Char('b'),
-	)
-
-	// Act
-	result := parser([]rune("a  b"))
-
-	// Assert
-	assert.Equal(t, []any{"a", "b"}, result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
-
-func BenchmarkDiscardAll(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		DiscardAll(Whitespace())([]rune("   foo   "))
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestSequence(t *testing.T) {
 	t.Parallel()
 
-	result := Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foo bar"))
-	assert.Equal(t, []any{"foo", " ", "bar"}, result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
+	type args struct {
+		p Parser[string, []string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    []string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parsers should succeed",
+			input: "1a3",
+			args: args{
+				p: Sequence(Digit1(), Alpha0(), Digit1()),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"1", "a", "3"},
+			wantRemaining: "",
+		},
+		{
+			name:  "matching parsers in longer input should succeed",
+			input: "1a3bcd",
+			args: args{
+				p: Sequence(Digit1(), Alpha0(), Digit1()),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"1", "a", "3"},
+			wantRemaining: "bcd",
+		},
+		{
+			name:  "partially matching parsers should fail",
+			input: "1a3",
+			args: args{
+				p: Sequence(Digit1(), Digit1(), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "1a3",
+		},
+		{
+			name:  "too short input should fail",
+			input: "12",
+			args: args{
+				p: Sequence(Digit1(), Digit1(), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "12",
+		},
+		{
+			name:  "empty input should succeed",
+			input: "",
+			args: args{
+				p: Sequence(Digit1(), Digit1(), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-func TestSequenceWithFailingSubparser(t *testing.T) {
-	t.Parallel()
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	result := Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foobar"))
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, " ", result.Err.Expected[0])
-	assert.Equal(t, "bar", string(result.Err.Input))
-}
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
 
-func BenchmarkSequence(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Sequence(Tag("foo"), Char(' '), Tag("bar"))([]rune("foo bar"))
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestPreceded(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Preceded(Char('('), Tag("foo"))
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "+123",
+			args: args{
+				p: Preceded(Char('+'), Digit1()),
+			},
+			wantErr:       false,
+			wantOutput:    "123",
+			wantRemaining: "",
+		},
+		{
+			name:  "no prefix match should fail",
+			input: "+123",
+			args: args{
+				p: Preceded(Char('-'), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "+123",
+		},
+		{
+			name:  "no parser match should succeed",
+			input: "+",
+			args: args{
+				p: Preceded(Char('+'), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "+",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Preceded(Char('+'), Digit1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("(foo"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func TestPrecededFailsOnMissingDelimiterFromInput(t *testing.T) {
-	t.Parallel()
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
 
-	// Arrange
-	parser := Preceded(Char('('), Tag("foo"))
-
-	// Act
-	result := parser([]rune("foo"))
-
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "(", result.Err.Expected[0])
-	assert.Equal(t, "foo", string(result.Err.Input))
-}
-
-func TestPrecededFailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Preceded(Char('('), Tag("foo"))
-
-	// Act
-	result := parser([]rune("(bar"))
-
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "foo", result.Err.Expected[0])
-	assert.Equal(t, "bar", string(result.Err.Input))
-}
-
-func BenchmarkPreceded(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Preceded(Char('('), Tag("foo"))([]rune("(foo)"))
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestTerminated(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Terminated(Tag("foo"), Char(')'))
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "1+23",
+			args: args{
+				p: Terminated(Digit1(), Char('+')),
+			},
+			wantErr:       false,
+			wantOutput:    "1",
+			wantRemaining: "23",
+		},
+		{
+			name:  "no suffix match should fail",
+			input: "1-23",
+			args: args{
+				p: Terminated(Digit1(), Char('+')),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "1-23",
+		},
+		{
+			name:  "no parser match should succeed",
+			input: "+",
+			args: args{
+				p: Terminated(Digit1(), Char('+')),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "+",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Terminated(Digit1(), Char('+')),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("foo)"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Output)
-	assert.Equal(t, "", string(result.Remaining))
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func TestTerminatedFailsOnPresentDelimiterButFailingSuccessorParser(t *testing.T) {
-	t.Parallel()
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
 
-	// Arrange
-	parser := Terminated(Tag("foo"), Char(')'))
-
-	// Act
-	result := parser([]rune("bar)"))
-
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "foo", result.Err.Expected[0])
-	assert.Equal(t, "bar)", string(result.Err.Input))
-}
-
-func TestTerminatedFailsOnMissingDelimiterFromInput(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	parser := Terminated(Tag("foo"), Char(')'))
-
-	// Act
-	result := parser([]rune("foo"))
-
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, ")", result.Err.Expected[0])
-	assert.Equal(t, "", string(result.Err.Input))
-}
-
-func BenchmarkTerminated(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Terminated(Tag("foo"), Char(')'))([]rune("foo)"))
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }
 
 func TestDelimited(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Delimited(Char('('), Tag("foo"), Char(')'))
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "+1\r\n",
+			args: args{
+				p: Delimited(Char('+'), Digit1(), CRLF()),
+			},
+			wantErr:       false,
+			wantOutput:    "1",
+			wantRemaining: "",
+		},
+		{
+			name:  "no prefix match should fail",
+			input: "1\r\n",
+			args: args{
+				p: Delimited(Char('+'), Digit1(), CRLF()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "1\r\n",
+		},
+		{
+			name:  "no parser match should fail",
+			input: "+\r\n",
+			args: args{
+				p: Delimited(Char('+'), Digit1(), CRLF()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "+\r\n",
+		},
+		{
+			name:  "no suffix match should fail",
+			input: "+1",
+			args: args{
+				p: Delimited(Char('+'), Digit1(), CRLF()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "+1",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Delimited(Char('+'), Digit1(), CRLF()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("(foo)"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.Nil(t, result.Err)
-	assert.Equal(t, "foo", result.Output)
-	assert.Equal(t, "", string(result.Remaining))
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
 }
 
-func TestDelimitedFailsOnMissingPrefix(t *testing.T) {
+func TestPeek(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Delimited(Char('('), Tag("foo"), Char(')'))
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abcd;",
+			args: args{
+				p: Peek(Alpha1()),
+			},
+			wantErr:       false,
+			wantOutput:    "abcd",
+			wantRemaining: "abcd;",
+		},
+		{
+			name:  "non matching parser should fail",
+			input: "123;",
+			args: args{
+				p: Peek(Alpha1()),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123;",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("foo)"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Equal(t, "foo)", string(result.Remaining))
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "(", result.Err.Expected[0])
-	assert.Equal(t, "foo)", string(result.Err.Input))
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
 }
 
-func TestDelimitedFailsOnMissingMainParser(t *testing.T) {
+func TestRecognize(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Delimited(Char('('), Tag("foo"), Char(')'))
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "123abc",
+			args: args{
+				p: Recognize(Pair(Digit1(), Alpha1())),
+			},
+			wantErr:       false,
+			wantOutput:    "123abc",
+			wantRemaining: "",
+		},
+		{
+			name:  "no prefix match should fail",
+			input: "abc",
+			args: args{
+				p: Recognize(Pair(Digit1(), Alpha1())),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "abc",
+		},
+		{
+			name:  "no parser match should fail",
+			input: "123",
+			args: args{
+				p: Recognize(Pair(Digit1(), Alpha1())),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Recognize(Pair(Digit1(), Alpha1())),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("()"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Equal(t, "()", string(result.Remaining))
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, "foo", result.Err.Expected[0])
-	assert.Equal(t, ")", string(result.Err.Input))
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
 }
 
-func TestDelimitedFailsOnMissingSuffix(t *testing.T) {
+func TestAssign(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	parser := Delimited(Char('('), Tag("foo"), Char(')'))
+	type args struct {
+		p Parser[string, int]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    int
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abcd",
+			args: args{
+				p: Assign(1234, Alpha1()),
+			},
+			wantErr:       false,
+			wantOutput:    1234,
+			wantRemaining: "",
+		},
+		{
+			name:  "non matching parser should fail",
+			input: "123abcd;",
+			args: args{
+				p: Assign(1234, Alpha1()),
+			},
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "123abcd;",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
 
-	// Act
-	result := parser([]rune("(foo"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	assert.NotNil(t, result.Err)
-	assert.Equal(t, "(foo", string(result.Remaining))
-	assert.Len(t, result.Err.Expected, 1)
-	assert.Equal(t, ")", result.Err.Expected[0])
-	assert.Equal(t, "", string(result.Err.Input))
-}
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
 
-func BenchmarkDelimited(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Delimited(Char('('), Tag("foo"), Char(')'))([]rune("(foo)"))
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
 	}
 }

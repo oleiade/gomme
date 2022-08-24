@@ -1,9 +1,6 @@
 package gomme
 
-import (
-	"fmt"
-	"strconv"
-)
+// import "math"
 
 // Float parses a sequence of numerical characters into a float64.
 // The '.' character is used as the optional decimal delimiter. Any
@@ -11,50 +8,52 @@ import (
 //
 // N.B: it is not the parser's role to make sure the floating point
 // number you're attempting to parse fits into a 64 bits float.
-func Float() Parser {
-	digitsParser := TakeWhileOneOf([]rune("0123456789")...)
-	minusParser := Char('-')
-	dotParser := Char('.')
 
-	return func(input []rune) Result {
-		var negative bool
+// func Float[I Bytes]() Parser[I, float64] {
+// 	digitsParser := TakeWhileOneOf[I]([]rune("0123456789")...)
+// 	minusParser := Char[I]('-')
+// 	dotParser := Char[I]('.')
 
-		result := minusParser(input)
-		if result.Err == nil {
-			negative = true
-		}
+// 	return func(input I) Result[float64, I] {
+// 		var negative bool
 
-		result = Expect(digitsParser, "digits")(result.Remaining)
-		if result.Err != nil {
-			return result
-		}
+// 		minusresult := minusParser(input)
+// 		if result.Err == nil {
+// 			negative = true
+// 		}
 
-		parsed, ok := result.Output.(string)
-		if !ok {
-			err := fmt.Errorf("failed parsing floating point value; " +
-				"reason: converting Float() parser result's output to string failed",
-			)
-			return Failure(NewFatalError(input, err, "float"), input)
-		}
-		if resultTest := dotParser(result.Remaining); resultTest.Err == nil {
-			if resultTest = digitsParser(resultTest.Remaining); resultTest.Err == nil {
-				parsed = parsed + "." + resultTest.Output.(string)
-				result = resultTest
-			}
-		}
+// 		result = digitsParser(result.Remaining)
+// 		// result = Expect(digitsParser, "digits")(result.Remaining)
+// 		// if result.Err != nil {
+// 		// 	return result
+// 		// }
 
-		floatingPointValue, err := strconv.ParseFloat(parsed, 64)
-		if err != nil {
-			err = fmt.Errorf("failed to parse '%v' as float; reason: %w", parsed, err)
-			return Failure(NewFatalError(input, err), input)
-		}
+// 		parsed, ok := result.Output.(string)
+// 		if !ok {
+// 			err := fmt.Errorf("failed parsing floating point value; " +
+// 				"reason: converting Float() parser result's output to string failed",
+// 			)
+// 			return Failure(NewFatalError(input, err, "float"), input)
+// 		}
+// 		if resultTest := dotParser(result.Remaining); resultTest.Err == nil {
+// 			if resultTest = digitsParser(resultTest.Remaining); resultTest.Err == nil {
+// 				parsed = parsed + "." + resultTest.Output.(string)
+// 				result = resultTest
+// 			}
+// 		}
 
-		if negative {
-			floatingPointValue = -floatingPointValue
-		}
+// 		floatingPointValue, err := strconv.ParseFloat(parsed, 64)
+// 		if err != nil {
+// 			err = fmt.Errorf("failed to parse '%v' as float; reason: %w", parsed, err)
+// 			return Failure(NewFatalError(input, err), input)
+// 		}
 
-		result.Output = floatingPointValue
+// 		if negative {
+// 			floatingPointValue = -floatingPointValue
+// 		}
 
-		return result
-	}
-}
+// 		result.Output = floatingPointValue
+
+// 		return result
+// 	}
+// }
