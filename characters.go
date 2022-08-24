@@ -324,6 +324,26 @@ func Int64[I Bytes]() Parser[I, int64] {
 	}
 }
 
+// Int8 parses an 8-bit integer from the input,
+// and returns the part of the input that matched the integer.
+func Int8[I Bytes]() Parser[I, int8] {
+	return func(input I) Result[int8, I] {
+		parser := Recognize(Sequence(Optional(Token[I]("-")), Digit1[I]()))
+
+		result := parser(input)
+		if result.Err != nil {
+			return Failure[I, int8](NewGenericError(input, "int8"), input)
+		}
+
+		n, err := strconv.ParseInt(string(result.Output), 10, 8)
+		if err != nil {
+			return Failure[I, int8](NewGenericError(input, "int8"), input)
+		}
+
+		return Success(int8(n), result.Remaining)
+	}
+}
+
 // IsAlpha returns true if the rune is an alphabetic character.
 func IsAlpha(c rune) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
