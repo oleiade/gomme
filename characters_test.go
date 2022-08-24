@@ -1075,6 +1075,73 @@ func TestCRLF(t *testing.T) {
 	}
 }
 
+func TestSatisfy(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, rune]
+		input         string
+		wantErr       bool
+		wantOutput    rune
+		wantRemaining string
+	}{
+		{
+			name:          "parsing single alpha char satisfying constraint should succeed",
+			parser:        Satisfy(IsAlpha),
+			input:         "a",
+			wantErr:       false,
+			wantOutput:    'a',
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing alpha char satisfying constraint from mixed input should succeed",
+			parser:        Satisfy(IsAlpha),
+			input:         "a1",
+			wantErr:       false,
+			wantOutput:    'a',
+			wantRemaining: "1",
+		},
+		{
+			name:          "parsing char not satisfying constraint should succeed",
+			parser:        Satisfy(IsAlpha),
+			input:         "1",
+			wantErr:       true,
+			wantOutput:    rune(0),
+			wantRemaining: "1",
+		},
+		{
+			name:          "parsing empty input should succeed",
+			parser:        Satisfy(IsAlpha),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    rune(0),
+			wantRemaining: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
 func TestSpace(t *testing.T) {
 	t.Parallel()
 

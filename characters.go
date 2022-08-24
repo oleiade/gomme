@@ -254,6 +254,21 @@ func CRLF[I Bytes]() Parser[I, I] {
 	}
 }
 
+// Satisfy parses a single character, and ensures that it satisfies the given predicate.
+func Satisfy[I Bytes](predicate func(rune) bool) Parser[I, rune] {
+	return func(input I) Result[rune, I] {
+		if len(input) == 0 {
+			return Failure[I, rune](NewGenericError(input, "satisfy"), input)
+		}
+
+		if !predicate(rune(input[0])) {
+			return Failure[I, rune](NewGenericError(input, "satisfy"), input)
+		}
+
+		return Success(rune(input[0]), input[1:])
+	}
+}
+
 // Space parses a space character.
 func Space[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
