@@ -383,7 +383,17 @@ func UInt8[I Bytes]() Parser[I, uint8] {
 
 // IsAlpha returns true if the rune is an alphabetic character.
 func IsAlpha(c rune) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	return IsLowAlpha(c) || IsUpAlpha(c)
+}
+
+// IsLowAlpha returns true if the rune is a lowercase alphabetic character.
+func IsLowAlpha(c rune) bool {
+	return c >= 'a' && c <= 'z'
+}
+
+// IsUpAlpha returns true if the rune is an uppercase alphabetic character.
+func IsUpAlpha(c rune) bool {
+	return c >= 'A' && c <= 'Z'
 }
 
 // IsDigit returns true if the rune is a digit.
@@ -391,7 +401,7 @@ func IsDigit(c rune) bool {
 	return c >= '0' && c <= '9'
 }
 
-// IsAlphaNumeric returns true if the rune is an alphanumeric character.
+// IsAlphanumeric returns true if the rune is an alphanumeric character.
 func IsAlphanumeric(c rune) bool {
 	return IsAlpha(c) || IsDigit(c)
 }
@@ -399,4 +409,8 @@ func IsAlphanumeric(c rune) bool {
 // IsHexDigit returns true if the rune is a hexadecimal digit.
 func IsHexDigit(c rune) bool {
 	return IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+func IsControl(c rune) bool {
+	return c < 32 || c == 127
 }
