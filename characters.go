@@ -254,6 +254,23 @@ func CRLF[I Bytes]() Parser[I, I] {
 	}
 }
 
+// OneOf parses a single character from the given set of characters.
+func OneOf[I Bytes](collection ...rune) Parser[I, rune] {
+	return func(input I) Result[rune, I] {
+		if len(input) == 0 {
+			return Failure[I, rune](NewGenericError(input, "OneOf"), input)
+		}
+
+		for _, c := range collection {
+			if rune(input[0]) == c {
+				return Success(rune(input[0]), input[1:])
+			}
+		}
+
+		return Failure[I, rune](NewGenericError(input, "OneOf"), input)
+	}
+}
+
 // Satisfy parses a single character, and ensures that it satisfies the given predicate.
 func Satisfy[I Bytes](predicate func(rune) bool) Parser[I, rune] {
 	return func(input I) Result[rune, I] {

@@ -1075,6 +1075,65 @@ func TestCRLF(t *testing.T) {
 	}
 }
 
+func TestOneOf(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, rune]
+		input         string
+		wantErr       bool
+		wantOutput    rune
+		wantRemaining string
+	}{
+		{
+			name:          "parsing matched char should succeed",
+			parser:        OneOf('a', '1', '+'),
+			input:         "+",
+			wantErr:       false,
+			wantOutput:    '+',
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing input not containing any of the sought chars should fail",
+			parser:        OneOf('a', '1', '+'),
+			input:         "b",
+			wantErr:       true,
+			wantOutput:    rune(0),
+			wantRemaining: "b",
+		},
+		{
+			name:          "parsing empty input should fail",
+			parser:        OneOf('a', '1', '+'),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    rune(0),
+			wantRemaining: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
 func TestSatisfy(t *testing.T) {
 	t.Parallel()
 
