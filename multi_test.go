@@ -83,7 +83,7 @@ func TestCount(t *testing.T) {
 	}
 }
 
-func TestMany(t *testing.T) {
+func TestMany0(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
@@ -101,7 +101,7 @@ func TestMany(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "###",
 			args: args{
-				p: Many(Char('#')),
+				p: Many0(Char('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{'#', '#', '#'},
@@ -111,7 +111,7 @@ func TestMany(t *testing.T) {
 			name:  "no match should succeed",
 			input: "abc",
 			args: args{
-				p: Many(Char('#')),
+				p: Many0(Char('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{},
@@ -121,7 +121,7 @@ func TestMany(t *testing.T) {
 			name:  "empty input should succeed",
 			input: "",
 			args: args{
-				p: Many(Char('#')),
+				p: Many0(Char('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{},
@@ -150,4 +150,121 @@ func TestMany(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMany0DetectsInfiniteLoops(t *testing.T) {
+	t.Parallel()
+
+	// Digit0 accepts empty input, and would cause an infinite loop if not detected
+	input := "abcdef"
+	parser := Many0(Digit0())
+
+	result := parser(input)
+
+	assert.Error(t, result.Err)
+	assert.Nil(t, result.Output)
+	assert.Equal(t, input, result.Remaining)
+}
+
+func TestMany1(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, []rune]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    []rune
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "###",
+			args: args{
+				p: Many1(Char('#')),
+			},
+			wantErr:       false,
+			wantOutput:    []rune{'#', '#', '#'},
+			wantRemaining: "",
+		},
+		{
+			name:  "matching at least once should succeed",
+			input: "#abc",
+			args: args{
+				p: Many1(Char('#')),
+			},
+			wantErr:       false,
+			wantOutput:    []rune{'#'},
+			wantRemaining: "abc",
+		},
+		{
+			name:  "not matching at least once should fail",
+			input: "a##",
+			args: args{
+				p: Many1(Char('#')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "a##",
+		},
+		{
+			name:  "no match should fail",
+			input: "abc",
+			args: args{
+				p: Many1(Char('#')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "abc",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: Many1(Char('#')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func TestMany1DetectsInfiniteLoops(t *testing.T) {
+	t.Parallel()
+
+	// Digit0 accepts empty input, and would cause an infinite loop if not detected
+	input := "abcdef"
+	parser := Many1(Digit0())
+
+	result := parser(input)
+
+	assert.Error(t, result.Err)
+	assert.Nil(t, result.Output)
+	assert.Equal(t, input, result.Remaining)
 }

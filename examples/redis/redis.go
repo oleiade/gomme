@@ -311,7 +311,7 @@ func Array() gomme.Parser[string, RESPMessage] {
 	return gomme.Map(
 		gomme.Pair(
 			sizePrefix(gomme.Token(string(ArrayKind))),
-			gomme.Many(
+			gomme.Many0(
 				gomme.Alternative(
 					SimpleString(),
 					Error(),
