@@ -110,6 +110,12 @@ func Take[I Bytes](count uint) Parser[I, I] {
 	}
 }
 
+// TakeWhileMN returns the longest input subset that matches the predicates, within
+// the boundaries of `atLeast` <= len(input) <= `atMost`.
+//
+// If the provided parser is not successful or the pattern is out of the
+// `atLeast` <= len(input) <= `atMost` range, the parser fails, and the entire
+// input is returned as the Result's Remaining.
 func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
@@ -214,6 +220,5 @@ func Assign[I Bytes, O1, O2 any](value O1, parse Parser[I, O2]) Parser[I, O1] {
 		}
 
 		return Success(value, result.Remaining)
-
 	}
 }
