@@ -1,6 +1,9 @@
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-
 # Gomme
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![Build Status](https://github.com/oleiade/gomme/actions/workflows/go.yml/badge.svg)](https://github.com/oleiade/gomme/actions/workflows/go.yml)
+[![Coverage Status](https://coveralls.io/repos/github/oleiade/gomme/badge.svg?branch=main)](https://coveralls.io/github/gomme/actions?branch=main)
+![Go Version](https://img.shields.io/github/go-mod/go-version/oleiade/gomme)
 
 Gomme is a parser combinator library for the Go programming language.
 It provides a toolkit for developers to build reliable, fast, flexible, and easy-to-develop and maintain parsers
