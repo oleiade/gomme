@@ -72,6 +72,15 @@ func TestTakeWhileOneOf(t *testing.T) {
 	}
 }
 
+func BenchmarkTakeWhileOneOf(b *testing.B) {
+	p := TakeWhileOneOf('a', 'b', 'c')
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("abc123")
+	}
+}
+
 func TestTakeUntil(t *testing.T) {
 	t.Parallel()
 
@@ -149,6 +158,15 @@ func TestTakeUntil(t *testing.T) {
 	}
 }
 
+func BenchmarkTakeUntil(b *testing.B) {
+	p := TakeUntil(Digit1())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("abc123")
+	}
+}
+
 func TestTake(t *testing.T) {
 	t.Parallel()
 
@@ -223,6 +241,15 @@ func TestTake(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkTake(b *testing.B) {
+	p := Take(6)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("123456")
 	}
 }
 
@@ -310,6 +337,15 @@ func TestTakeWhileMN(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkTakeWhileMN(b *testing.B) {
+	p := TakeWhileMN(3, 6, IsAlpha)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("latin")
 	}
 }
 
@@ -409,6 +445,27 @@ func TestMap(t *testing.T) {
 	}
 }
 
+func BenchmarkMap(b *testing.B) {
+	type TestStruct struct {
+		Foo int
+		Bar string
+	}
+
+	p := Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+		left, _ := strconv.Atoi(p.Left)
+
+		return TestStruct{
+			Foo: left,
+			Bar: p.Right,
+		}, nil
+	})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("1abc\r\n")
+	}
+}
+
 func TestOptional(t *testing.T) {
 	t.Parallel()
 
@@ -476,6 +533,15 @@ func TestOptional(t *testing.T) {
 	}
 }
 
+func BenchmarkOptional(b *testing.B) {
+	p := Optional(CRLF())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("\r\n123")
+	}
+}
+
 func TestPeek(t *testing.T) {
 	t.Parallel()
 
@@ -530,6 +596,15 @@ func TestPeek(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkPeek(b *testing.B) {
+	p := Peek(Alpha1())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("abcd;")
 	}
 }
 
@@ -610,6 +685,15 @@ func TestRecognize(t *testing.T) {
 	}
 }
 
+func BenchmarkRecognize(b *testing.B) {
+	p := Recognize(Pair(Digit1(), Alpha1()))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("123abc")
+	}
+}
+
 func TestAssign(t *testing.T) {
 	t.Parallel()
 
@@ -664,5 +748,14 @@ func TestAssign(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkAssign(b *testing.B) {
+	p := Assign(1234, Alpha1())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("abcd")
 	}
 }

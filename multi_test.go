@@ -83,6 +83,15 @@ func TestCount(t *testing.T) {
 	}
 }
 
+func BenchmarkCount(b *testing.B) {
+	parser := Count(Char('#'), 3)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("###")
+	}
+}
+
 func TestMany0(t *testing.T) {
 	t.Parallel()
 
@@ -164,6 +173,15 @@ func TestMany0DetectsInfiniteLoops(t *testing.T) {
 	assert.Error(t, result.Err)
 	assert.Nil(t, result.Output)
 	assert.Equal(t, input, result.Remaining)
+}
+
+func BenchmarkMany0(b *testing.B) {
+	parser := Many0(Char('#'))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("###")
+	}
 }
 
 func TestMany1(t *testing.T) {
@@ -267,4 +285,13 @@ func TestMany1DetectsInfiniteLoops(t *testing.T) {
 	assert.Error(t, result.Err)
 	assert.Nil(t, result.Output)
 	assert.Equal(t, input, result.Remaining)
+}
+
+func BenchmarkMany1(b *testing.B) {
+	parser := Many1(Char('#'))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("###")
+	}
 }

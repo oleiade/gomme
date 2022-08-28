@@ -84,3 +84,11 @@ func TestAlternative(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkAlternative(b *testing.B) {
+	p := Alternative(Digit1(), Alpha1())
+
+	for i := 0; i < b.N; i++ {
+		p("123")
+	}
+}

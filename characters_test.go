@@ -71,6 +71,14 @@ func TestChar(t *testing.T) {
 	}
 }
 
+func BenchmarkChar(b *testing.B) {
+	parser := Char('a')
+
+	for i := 0; i < b.N; i++ {
+		parser("a")
+	}
+}
+
 func TestAnyChar(t *testing.T) {
 	t.Parallel()
 
@@ -127,6 +135,14 @@ func TestAnyChar(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkAnyChar(b *testing.B) {
+	parser := AnyChar()
+
+	for i := 0; i < b.N; i++ {
+		parser("a")
 	}
 }
 
@@ -202,6 +218,14 @@ func TestAlpha0(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkAlpha0(b *testing.B) {
+	parser := Alpha0()
+
+	for i := 0; i < b.N; i++ {
+		parser("abc")
 	}
 }
 
@@ -288,6 +312,14 @@ func TestAlpha1(t *testing.T) {
 	}
 }
 
+func BenchmarkAlpha1(b *testing.B) {
+	parser := Alpha1()
+
+	for i := 0; i < b.N; i++ {
+		parser("abc")
+	}
+}
+
 func TestDigit0(t *testing.T) {
 	t.Parallel()
 
@@ -360,6 +392,14 @@ func TestDigit0(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkDigit0(b *testing.B) {
+	parser := Digit0()
+
+	for i := 0; i < b.N; i++ {
+		parser("123")
 	}
 }
 
@@ -446,6 +486,14 @@ func TestDigit1(t *testing.T) {
 	}
 }
 
+func BenchmarkDigit1(b *testing.B) {
+	parser := Digit1()
+
+	for i := 0; i < b.N; i++ {
+		parser("123")
+	}
+}
+
 func TestHexDigit0(t *testing.T) {
 	t.Parallel()
 
@@ -518,6 +566,14 @@ func TestHexDigit0(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkHexDigit0(b *testing.B) {
+	parser := HexDigit0()
+
+	for i := 0; i < b.N; i++ {
+		parser("1f3")
 	}
 }
 
@@ -601,6 +657,14 @@ func TestHexDigit1(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkHexDigit1(b *testing.B) {
+	parser := HexDigit1()
+
+	for i := 0; i < b.N; i++ {
+		parser("1f3")
 	}
 }
 
@@ -716,6 +780,14 @@ func TestAlphanumeric0(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkAlphanumeric0(b *testing.B) {
+	parser := Alphanumeric0()
+
+	for i := 0; i < b.N; i++ {
+		parser("a1b2c3")
 	}
 }
 
@@ -842,6 +914,14 @@ func TestAlphanumeric1(t *testing.T) {
 	}
 }
 
+func BenchmarkAlphanumeric1(b *testing.B) {
+	parser := Alphanumeric1()
+
+	for i := 0; i < b.N; i++ {
+		parser("a1b2c3")
+	}
+}
+
 func TestLF(t *testing.T) {
 	t.Parallel()
 
@@ -917,6 +997,14 @@ func TestLF(t *testing.T) {
 	}
 }
 
+func BenchmarkLF(b *testing.B) {
+	parser := LF()
+
+	for i := 0; i < b.N; i++ {
+		parser("\n")
+	}
+}
+
 func TestCR(t *testing.T) {
 	t.Parallel()
 
@@ -989,6 +1077,14 @@ func TestCR(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkCR(b *testing.B) {
+	parser := CR()
+
+	for i := 0; i < b.N; i++ {
+		parser("\r")
 	}
 }
 
@@ -1075,6 +1171,14 @@ func TestCRLF(t *testing.T) {
 	}
 }
 
+func BenchmarkCRLF(b *testing.B) {
+	parser := CRLF()
+
+	for i := 0; i < b.N; i++ {
+		parser("\r\n")
+	}
+}
+
 func TestOneOf(t *testing.T) {
 	t.Parallel()
 
@@ -1131,6 +1235,14 @@ func TestOneOf(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkOneOf(b *testing.B) {
+	parser := OneOf('a', '1', '+')
+
+	for i := 0; i < b.N; i++ {
+		parser("+")
 	}
 }
 
@@ -1198,6 +1310,14 @@ func TestSatisfy(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkSatisfy(b *testing.B) {
+	parser := Satisfy(IsAlpha)
+
+	for i := 0; i < b.N; i++ {
+		parser("a")
 	}
 }
 
@@ -1276,6 +1396,14 @@ func TestSpace(t *testing.T) {
 	}
 }
 
+func BenchmarkSpace(b *testing.B) {
+	parser := Space()
+
+	for i := 0; i < b.N; i++ {
+		parser(" ")
+	}
+}
+
 func TestTab(t *testing.T) {
 	t.Parallel()
 
@@ -1351,6 +1479,14 @@ func TestTab(t *testing.T) {
 	}
 }
 
+func BenchmarkTab(b *testing.B) {
+	parser := Tab()
+
+	for i := 0; i < b.N; i++ {
+		parser("\t")
+	}
+}
+
 func TestToken(t *testing.T) {
 	t.Parallel()
 
@@ -1407,6 +1543,14 @@ func TestToken(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkToken(b *testing.B) {
+	parser := Token("Bonjour")
+
+	for i := 0; i < b.N; i++ {
+		parser("Bonjour tout le monde")
 	}
 }
 
@@ -1477,6 +1621,14 @@ func TestInt64(t *testing.T) {
 	}
 }
 
+func BenchmarkInt64(b *testing.B) {
+	parser := Int64()
+
+	for i := 0; i < b.N; i++ {
+		parser("123")
+	}
+}
+
 func TestInt8(t *testing.T) {
 	t.Parallel()
 
@@ -1544,6 +1696,14 @@ func TestInt8(t *testing.T) {
 	}
 }
 
+func BenchmarkInt8(b *testing.B) {
+	parser := Int8()
+
+	for i := 0; i < b.N; i++ {
+		parser("123")
+	}
+}
+
 func TestUInt8(t *testing.T) {
 	t.Parallel()
 
@@ -1600,5 +1760,13 @@ func TestUInt8(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkUInt8(b *testing.B) {
+	parser := UInt8()
+
+	for i := 0; i < b.N; i++ {
+		parser("253")
 	}
 }

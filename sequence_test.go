@@ -93,6 +93,15 @@ func TestDelimited(t *testing.T) {
 	}
 }
 
+func BenchmarkDelimited(b *testing.B) {
+	parser := Delimited(Char('+'), Digit1(), CRLF())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("+1\r\n")
+	}
+}
+
 func TestPair(t *testing.T) {
 	t.Parallel()
 
@@ -177,6 +186,15 @@ func TestPair(t *testing.T) {
 	}
 }
 
+func BenchmarkPair(b *testing.B) {
+	parser := Pair(Digit1(), TakeUntil(CRLF()))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("1abc\r\n")
+	}
+}
+
 func TestPreceded(t *testing.T) {
 	t.Parallel()
 
@@ -251,6 +269,15 @@ func TestPreceded(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkPreceded(b *testing.B) {
+	parser := Preceded(Char('+'), Digit1())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("+123")
 	}
 }
 
@@ -399,6 +426,15 @@ func TestSeparatedPair(t *testing.T) {
 	}
 }
 
+func BenchmarkSeparatedPair(b *testing.B) {
+	parser := SeparatedPair(Digit1(), Char('|'), TakeUntil(CRLF()))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("1|abc\r\n")
+	}
+}
+
 func TestSequence(t *testing.T) {
 	t.Parallel()
 
@@ -488,6 +524,15 @@ func TestSequence(t *testing.T) {
 	}
 }
 
+func BenchmarkSequence(b *testing.B) {
+	parser := Sequence(Digit1(), Alpha0(), Digit1())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("123")
+	}
+}
+
 func TestTerminated(t *testing.T) {
 	t.Parallel()
 
@@ -562,5 +607,14 @@ func TestTerminated(t *testing.T) {
 				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
 			}
 		})
+	}
+}
+
+func BenchmarkTerminated(b *testing.B) {
+	parser := Terminated(Digit1(), Char('+'))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser("123+")
 	}
 }
