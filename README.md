@@ -11,7 +11,18 @@ for both textual and binary formats. It extensively uses the recent introduction
 language to offer flexibility in how combinators can be mixed and matched to produce the desired output while
 providing as much compile-time type safety as possible.
 
-## Usage/Examples
+## Table of Content
+
+<!-- toc -->
+
+- [Example](#example)
+- [Installation](#installation)
+- [Documentation](#documentation)
+- [FAQ](#faq)
+- [Acknowledgements](#acknowledgements)
+- [Authors](#authors)
+
+## Example
 
 FIXME: replace with something simpler and more explicit?
 
