@@ -24,7 +24,7 @@ func TestAlternative(t *testing.T) {
 			name:  "head matching parser should succeed",
 			input: "123",
 			args: args{
-				p: Alternative(Digit1(), Alpha0()),
+				p: Alternative(Digit1[string](), Alpha0[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "123",
@@ -34,7 +34,7 @@ func TestAlternative(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "1",
 			args: args{
-				p: Alternative(Digit1(), Alpha0()),
+				p: Alternative(Digit1[string](), Alpha0[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "1",
@@ -44,7 +44,7 @@ func TestAlternative(t *testing.T) {
 			name:  "no matching parser should fail",
 			input: "$%^*",
 			args: args{
-				p: Alternative(Digit1(), Alpha1()),
+				p: Alternative(Digit1[string](), Alpha1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -54,7 +54,7 @@ func TestAlternative(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Alternative(Digit1(), Alpha1()),
+				p: Alternative(Digit1[string](), Alpha1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -86,7 +86,7 @@ func TestAlternative(t *testing.T) {
 }
 
 func BenchmarkAlternative(b *testing.B) {
-	p := Alternative(Digit1(), Alpha1())
+	p := Alternative(Digit1[string](), Alpha1[string]())
 
 	for i := 0; i < b.N; i++ {
 		p("123")

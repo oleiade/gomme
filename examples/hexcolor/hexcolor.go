@@ -18,7 +18,7 @@ type HexColor struct {
 }
 
 func ParseHexColor(input string) (HexColor, error) {
-	prefixRes := gomme.Token("#")(input)
+	prefixRes := gomme.Token[string]("#")(input)
 	if prefixRes.Err != nil {
 		return HexColor{}, prefixRes.Err
 	}
@@ -42,7 +42,7 @@ func ParseHexColor(input string) (HexColor, error) {
 func HexColorComponent() gomme.Parser[string, uint8] {
 	return func(input string) gomme.Result[uint8, string] {
 		return gomme.Map(
-			gomme.TakeWhileMN(2, 2, gomme.IsHexDigit),
+			gomme.TakeWhileMN[string](2, 2, gomme.IsHexDigit),
 			fromHex,
 		)(input)
 	}
