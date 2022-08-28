@@ -12,7 +12,7 @@ import "fmt"
 
 // Bytes is a generic type alias for string
 type Bytes interface {
-	string
+	string | []byte
 }
 
 // Separator is a generic type alias for separator characters
@@ -135,12 +135,12 @@ func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parse
 		}
 
 		lastValidPos := 0
-		for idx, c := range input {
+		for idx := 0; idx < len(input); idx++ {
 			if uint(idx) == atMost {
 				break
 			}
 
-			matched := predicate(c)
+			matched := predicate(rune(input[idx]))
 			if !matched {
 				if uint(idx) < atLeast {
 					return Failure[I, I](NewError(input, "TakeWhileMN"), input)

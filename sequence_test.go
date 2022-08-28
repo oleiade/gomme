@@ -24,7 +24,7 @@ func TestDelimited(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "+1\r\n",
 			args: args{
-				p: Delimited(Char('+'), Digit1(), CRLF()),
+				p: Delimited(Char[string]('+'), Digit1[string](), CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "1",
@@ -34,7 +34,7 @@ func TestDelimited(t *testing.T) {
 			name:  "no prefix match should fail",
 			input: "1\r\n",
 			args: args{
-				p: Delimited(Char('+'), Digit1(), CRLF()),
+				p: Delimited(Char[string]('+'), Digit1[string](), CRLF[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -44,7 +44,7 @@ func TestDelimited(t *testing.T) {
 			name:  "no parser match should fail",
 			input: "+\r\n",
 			args: args{
-				p: Delimited(Char('+'), Digit1(), CRLF()),
+				p: Delimited(Char[string]('+'), Digit1[string](), CRLF[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -54,7 +54,7 @@ func TestDelimited(t *testing.T) {
 			name:  "no suffix match should fail",
 			input: "+1",
 			args: args{
-				p: Delimited(Char('+'), Digit1(), CRLF()),
+				p: Delimited(Char[string]('+'), Digit1[string](), CRLF[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -64,7 +64,7 @@ func TestDelimited(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Delimited(Char('+'), Digit1(), CRLF()),
+				p: Delimited(Char[string]('+'), Digit1[string](), CRLF[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -94,7 +94,7 @@ func TestDelimited(t *testing.T) {
 }
 
 func BenchmarkDelimited(b *testing.B) {
-	parser := Delimited(Char('+'), Digit1(), CRLF())
+	parser := Delimited(Char[string]('+'), Digit1[string](), CRLF[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -121,8 +121,8 @@ func TestPair(t *testing.T) {
 			name:  "matching parsers should succeed",
 			input: "1abc\r\n",
 			args: args{
-				leftParser:  Digit1(),
-				rightParser: TakeUntil(CRLF()),
+				leftParser:  Digit1[string](),
+				rightParser: TakeUntil(CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    PairContainer[string, string]{"1", "abc"},
@@ -132,8 +132,8 @@ func TestPair(t *testing.T) {
 			name:  "matching left parser, failing right parser, should fail",
 			input: "1abc",
 			args: args{
-				leftParser:  Digit1(),
-				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:  Digit1[string](),
+				rightParser: TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -143,8 +143,8 @@ func TestPair(t *testing.T) {
 			name:  "failing left parser, matching right parser, should fail",
 			input: "adef",
 			args: args{
-				leftParser:  Digit1(),
-				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:  Digit1[string](),
+				rightParser: TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -154,8 +154,8 @@ func TestPair(t *testing.T) {
 			name:  "failing left parser, failing right parser, should fail",
 			input: "123",
 			args: args{
-				leftParser:  Digit1(),
-				rightParser: TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:  Digit1[string](),
+				rightParser: TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -187,7 +187,7 @@ func TestPair(t *testing.T) {
 }
 
 func BenchmarkPair(b *testing.B) {
-	parser := Pair(Digit1(), TakeUntil(CRLF()))
+	parser := Pair(Digit1[string](), TakeUntil(CRLF[string]()))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -213,7 +213,7 @@ func TestPreceded(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "+123",
 			args: args{
-				p: Preceded(Char('+'), Digit1()),
+				p: Preceded(Char[string]('+'), Digit1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "123",
@@ -223,7 +223,7 @@ func TestPreceded(t *testing.T) {
 			name:  "no prefix match should fail",
 			input: "+123",
 			args: args{
-				p: Preceded(Char('-'), Digit1()),
+				p: Preceded(Char[string]('-'), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -233,7 +233,7 @@ func TestPreceded(t *testing.T) {
 			name:  "no parser match should succeed",
 			input: "+",
 			args: args{
-				p: Preceded(Char('+'), Digit1()),
+				p: Preceded(Char[string]('+'), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -243,7 +243,7 @@ func TestPreceded(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Preceded(Char('+'), Digit1()),
+				p: Preceded(Char[string]('+'), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -273,7 +273,7 @@ func TestPreceded(t *testing.T) {
 }
 
 func BenchmarkPreceded(b *testing.B) {
-	parser := Preceded(Char('+'), Digit1())
+	parser := Preceded(Char[string]('+'), Digit1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -302,9 +302,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "matching parsers should succeed",
 			input: "1|abc\r\n",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeUntil(CRLF()),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeUntil(CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    PairContainer[string, string]{"1", "abc"},
@@ -315,9 +315,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "matching left parser, matching separator, failing right parser, should fail",
 			input: "1|abc",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -328,9 +328,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "matching left parser, failing separator, matching right parser, should fail",
 			input: "1^abc",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('a', 'b', 'c'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -341,9 +341,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "matching left parser, failing separator, failing right parser, should fail",
 			input: "1^abc",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -354,9 +354,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "failing left parser, matching separator, matching right parser, should fail",
 			input: "a|def",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -367,9 +367,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "failing left parser, matching separator, failing right parser, should fail",
 			input: "a|123",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -380,9 +380,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "failing left parser, failing separator, matching right parser, should fail",
 			input: "a^def",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -393,9 +393,9 @@ func TestSeparatedPair(t *testing.T) {
 			name:  "failing left parser, failing separator, failing right parser, should fail",
 			input: "a^123",
 			args: args{
-				leftParser:      Digit1(),
-				separatorParser: Char('|'),
-				rightParser:     TakeWhileOneOf('d', 'e', 'f'),
+				leftParser:      Digit1[string](),
+				separatorParser: Char[string]('|'),
+				rightParser:     TakeWhileOneOf[string]('d', 'e', 'f'),
 			},
 			wantErr:       true,
 			wantOutput:    PairContainer[string, string]{},
@@ -427,7 +427,7 @@ func TestSeparatedPair(t *testing.T) {
 }
 
 func BenchmarkSeparatedPair(b *testing.B) {
-	parser := SeparatedPair(Digit1(), Char('|'), TakeUntil(CRLF()))
+	parser := SeparatedPair(Digit1[string](), Char[string]('|'), TakeUntil(CRLF[string]()))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -453,7 +453,7 @@ func TestSequence(t *testing.T) {
 			name:  "matching parsers should succeed",
 			input: "1a3",
 			args: args{
-				p: Sequence(Digit1(), Alpha0(), Digit1()),
+				p: Sequence(Digit1[string](), Alpha0[string](), Digit1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    []string{"1", "a", "3"},
@@ -463,7 +463,7 @@ func TestSequence(t *testing.T) {
 			name:  "matching parsers in longer input should succeed",
 			input: "1a3bcd",
 			args: args{
-				p: Sequence(Digit1(), Alpha0(), Digit1()),
+				p: Sequence(Digit1[string](), Alpha0[string](), Digit1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    []string{"1", "a", "3"},
@@ -473,7 +473,7 @@ func TestSequence(t *testing.T) {
 			name:  "partially matching parsers should fail",
 			input: "1a3",
 			args: args{
-				p: Sequence(Digit1(), Digit1(), Digit1()),
+				p: Sequence(Digit1[string](), Digit1[string](), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -483,7 +483,7 @@ func TestSequence(t *testing.T) {
 			name:  "too short input should fail",
 			input: "12",
 			args: args{
-				p: Sequence(Digit1(), Digit1(), Digit1()),
+				p: Sequence(Digit1[string](), Digit1[string](), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -493,7 +493,7 @@ func TestSequence(t *testing.T) {
 			name:  "empty input should succeed",
 			input: "",
 			args: args{
-				p: Sequence(Digit1(), Digit1(), Digit1()),
+				p: Sequence(Digit1[string](), Digit1[string](), Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -525,7 +525,7 @@ func TestSequence(t *testing.T) {
 }
 
 func BenchmarkSequence(b *testing.B) {
-	parser := Sequence(Digit1(), Alpha0(), Digit1())
+	parser := Sequence(Digit1[string](), Alpha0[string](), Digit1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -551,7 +551,7 @@ func TestTerminated(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "1+23",
 			args: args{
-				p: Terminated(Digit1(), Char('+')),
+				p: Terminated(Digit1[string](), Char[string]('+')),
 			},
 			wantErr:       false,
 			wantOutput:    "1",
@@ -561,7 +561,7 @@ func TestTerminated(t *testing.T) {
 			name:  "no suffix match should fail",
 			input: "1-23",
 			args: args{
-				p: Terminated(Digit1(), Char('+')),
+				p: Terminated(Digit1[string](), Char[string]('+')),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -571,7 +571,7 @@ func TestTerminated(t *testing.T) {
 			name:  "no parser match should succeed",
 			input: "+",
 			args: args{
-				p: Terminated(Digit1(), Char('+')),
+				p: Terminated(Digit1[string](), Char[string]('+')),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -581,7 +581,7 @@ func TestTerminated(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Terminated(Digit1(), Char('+')),
+				p: Terminated(Digit1[string](), Char[string]('+')),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -611,7 +611,7 @@ func TestTerminated(t *testing.T) {
 }
 
 func BenchmarkTerminated(b *testing.B) {
-	parser := Terminated(Digit1(), Char('+'))
+	parser := Terminated(Digit1[string](), Char[string]('+'))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -125,9 +125,9 @@ func SimpleString() gomme.Parser[string, RESPMessage] {
 	}
 
 	return gomme.Delimited(
-		gomme.Token(string(SimpleStringKind)),
-		gomme.Map(gomme.TakeUntil(gomme.CRLF()), mapFn),
-		gomme.CRLF(),
+		gomme.Token[string](string(SimpleStringKind)),
+		gomme.Map(gomme.TakeUntil(gomme.CRLF[string]()), mapFn),
+		gomme.CRLF[string](),
 	)
 }
 
@@ -162,9 +162,9 @@ func Error() gomme.Parser[string, RESPMessage] {
 	}
 
 	return gomme.Delimited(
-		gomme.Token(string(ErrorKind)),
-		gomme.Map(gomme.TakeUntil(gomme.CRLF()), mapFn),
-		gomme.CRLF(),
+		gomme.Token[string](string(ErrorKind)),
+		gomme.Map(gomme.TakeUntil(gomme.CRLF[string]()), mapFn),
+		gomme.CRLF[string](),
 	)
 }
 
@@ -199,9 +199,9 @@ func Integer() gomme.Parser[string, RESPMessage] {
 	}
 
 	return gomme.Delimited(
-		gomme.Token(string(IntegerKind)),
-		gomme.Map(gomme.TakeUntil(gomme.CRLF()), mapFn),
-		gomme.CRLF(),
+		gomme.Token[string](string(IntegerKind)),
+		gomme.Map(gomme.TakeUntil(gomme.CRLF[string]()), mapFn),
+		gomme.CRLF[string](),
 	)
 }
 
@@ -255,9 +255,9 @@ func BulkString() gomme.Parser[string, RESPMessage] {
 
 	return gomme.Map(
 		gomme.Pair(
-			sizePrefix(gomme.Token(string(BulkStringKind))),
+			sizePrefix(gomme.Token[string](string(BulkStringKind))),
 			gomme.Optional(
-				gomme.Terminated(gomme.TakeUntil(gomme.CRLF()), gomme.CRLF()),
+				gomme.Terminated(gomme.TakeUntil(gomme.CRLF[string]()), gomme.CRLF[string]()),
 			),
 		),
 		mapFn,
@@ -310,7 +310,7 @@ func Array() gomme.Parser[string, RESPMessage] {
 
 	return gomme.Map(
 		gomme.Pair(
-			sizePrefix(gomme.Token(string(ArrayKind))),
+			sizePrefix(gomme.Token[string](string(ArrayKind))),
 			gomme.Many0(
 				gomme.Alternative(
 					SimpleString(),
@@ -327,8 +327,8 @@ func Array() gomme.Parser[string, RESPMessage] {
 func sizePrefix(prefix gomme.Parser[string, string]) gomme.Parser[string, int64] {
 	return gomme.Delimited(
 		prefix,
-		gomme.Int64(),
-		gomme.CRLF(),
+		gomme.Int64[string](),
+		gomme.CRLF[string](),
 	)
 }
 

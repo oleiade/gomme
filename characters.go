@@ -39,8 +39,8 @@ func Alpha0[I Bytes]() Parser[I, I] {
 		}
 
 		lastAlphaPos := 0
-		for idx, c := range input {
-			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+		for idx := 0; idx < len(input); idx++ {
+			if !IsAlpha(rune(input[idx])) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -60,14 +60,14 @@ func Alpha1[I Bytes]() Parser[I, I] {
 			return Failure[I, I](NewError(input, "Alpha1"), input)
 		}
 
-		if (input[0] < 'a' || input[0] > 'z') && (input[0] < 'A' || input[0] > 'Z') {
+		if !IsAlpha(rune(input[0])) {
 			return Failure[I, I](NewError(input, "Alpha1"), input)
 		}
 
 		lastAlphaPos := 1
-		for idx, c := range input[1:] {
-			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
-				return Success(input[:idx+1], input[idx+1:])
+		for idx := 1; idx < len(input); idx++ {
+			if !IsAlpha(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
 			}
 
 			lastAlphaPos++
@@ -87,8 +87,8 @@ func Alphanumeric0[I Bytes]() Parser[I, I] {
 		}
 
 		lastDigitPos := 0
-		for idx, c := range input {
-			if !IsAlphanumeric(c) {
+		for idx := 0; idx < len(input); idx++ {
+			if !IsAlphanumeric(rune(input[idx])) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -113,9 +113,9 @@ func Alphanumeric1[I Bytes]() Parser[I, I] {
 		}
 
 		lastDigitPos := 1
-		for idx, c := range input[1:] {
-			if !IsAlphanumeric(c) {
-				return Success(input[:idx+1], input[idx+1:])
+		for idx := 1; idx < len(input); idx++ {
+			if !IsAlphanumeric(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
 			}
 
 			lastDigitPos++
@@ -135,8 +135,8 @@ func Digit0[I Bytes]() Parser[I, I] {
 		}
 
 		lastDigitPos := 0
-		for idx, c := range input {
-			if c < '0' || c > '9' {
+		for idx := 0; idx < len(input); idx++ {
+			if !IsDigit(rune(input[idx])) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -156,14 +156,14 @@ func Digit1[I Bytes]() Parser[I, I] {
 			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
-		if input[0] < '0' || input[0] > '9' {
+		if !IsDigit(rune(input[0])) {
 			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
 		lastDigitPos := 1
-		for idx, c := range input[1:] {
-			if c < '0' || c > '9' {
-				return Success(input[:idx+1], input[idx+1:])
+		for idx := 1; idx < len(input); idx++ {
+			if !IsDigit(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
 			}
 
 			lastDigitPos++
@@ -183,8 +183,8 @@ func HexDigit0[I Bytes]() Parser[I, I] {
 		}
 
 		lastDigitPos := 0
-		for idx, c := range input {
-			if !IsHexDigit(c) {
+		for idx := 0; idx < len(input); idx++ {
+			if !IsHexDigit(rune(input[idx])) {
 				return Success(input[:idx], input[idx:])
 			}
 
@@ -209,9 +209,9 @@ func HexDigit1[I Bytes]() Parser[I, I] {
 		}
 
 		lastDigitPos := 1
-		for idx, c := range input[1:] {
-			if !IsHexDigit(c) {
-				return Success(input[:idx+1], input[idx+1:])
+		for idx := 1; idx < len(input); idx++ {
+			if !IsHexDigit(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
 			}
 
 			lastDigitPos++
@@ -365,9 +365,7 @@ func Int8[I Bytes]() Parser[I, int8] {
 // and returns the part of the input that matched the integer.
 func UInt8[I Bytes]() Parser[I, uint8] {
 	return func(input I) Result[uint8, I] {
-		parser := Recognize(Sequence(Digit1[I]()))
-
-		result := parser(input)
+		result := Digit1[I]()(input)
 		if result.Err != nil {
 			return Failure[I, uint8](NewError(input, "UInt8"), input)
 		}

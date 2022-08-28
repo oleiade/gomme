@@ -19,7 +19,7 @@ func TestCount(t *testing.T) {
 	}{
 		{
 			name:          "parsing exact count should succeed",
-			parser:        Count(Token("abc"), 2),
+			parser:        Count(Token[string]("abc"), 2),
 			input:         "abcabc",
 			wantErr:       false,
 			wantOutput:    []string{"abc", "abc"},
@@ -27,7 +27,7 @@ func TestCount(t *testing.T) {
 		},
 		{
 			name:          "parsing more than count should succeed",
-			parser:        Count(Token("abc"), 2),
+			parser:        Count(Token[string]("abc"), 2),
 			input:         "abcabcabc",
 			wantErr:       false,
 			wantOutput:    []string{"abc", "abc"},
@@ -35,7 +35,7 @@ func TestCount(t *testing.T) {
 		},
 		{
 			name:          "parsing less than count should fail",
-			parser:        Count(Token("abc"), 2),
+			parser:        Count(Token[string]("abc"), 2),
 			input:         "abc123",
 			wantErr:       true,
 			wantOutput:    nil,
@@ -43,7 +43,7 @@ func TestCount(t *testing.T) {
 		},
 		{
 			name:          "parsing no count should fail",
-			parser:        Count(Token("abc"), 2),
+			parser:        Count(Token[string]("abc"), 2),
 			input:         "123123",
 			wantErr:       true,
 			wantOutput:    nil,
@@ -51,7 +51,7 @@ func TestCount(t *testing.T) {
 		},
 		{
 			name:          "parsing empty input should fail",
-			parser:        Count(Token("abc"), 2),
+			parser:        Count(Token[string]("abc"), 2),
 			input:         "",
 			wantErr:       true,
 			wantOutput:    nil,
@@ -84,7 +84,7 @@ func TestCount(t *testing.T) {
 }
 
 func BenchmarkCount(b *testing.B) {
-	parser := Count(Char('#'), 3)
+	parser := Count(Char[string]('#'), 3)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -110,7 +110,7 @@ func TestMany0(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "###",
 			args: args{
-				p: Many0(Char('#')),
+				p: Many0(Char[string]('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{'#', '#', '#'},
@@ -120,7 +120,7 @@ func TestMany0(t *testing.T) {
 			name:  "no match should succeed",
 			input: "abc",
 			args: args{
-				p: Many0(Char('#')),
+				p: Many0(Char[string]('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{},
@@ -130,7 +130,7 @@ func TestMany0(t *testing.T) {
 			name:  "empty input should succeed",
 			input: "",
 			args: args{
-				p: Many0(Char('#')),
+				p: Many0(Char[string]('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{},
@@ -166,7 +166,7 @@ func TestMany0DetectsInfiniteLoops(t *testing.T) {
 
 	// Digit0 accepts empty input, and would cause an infinite loop if not detected
 	input := "abcdef"
-	parser := Many0(Digit0())
+	parser := Many0(Digit0[string]())
 
 	result := parser(input)
 
@@ -176,7 +176,7 @@ func TestMany0DetectsInfiniteLoops(t *testing.T) {
 }
 
 func BenchmarkMany0(b *testing.B) {
-	parser := Many0(Char('#'))
+	parser := Many0(Char[string]('#'))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -202,7 +202,7 @@ func TestMany1(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "###",
 			args: args{
-				p: Many1(Char('#')),
+				p: Many1(Char[string]('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{'#', '#', '#'},
@@ -212,7 +212,7 @@ func TestMany1(t *testing.T) {
 			name:  "matching at least once should succeed",
 			input: "#abc",
 			args: args{
-				p: Many1(Char('#')),
+				p: Many1(Char[string]('#')),
 			},
 			wantErr:       false,
 			wantOutput:    []rune{'#'},
@@ -222,7 +222,7 @@ func TestMany1(t *testing.T) {
 			name:  "not matching at least once should fail",
 			input: "a##",
 			args: args{
-				p: Many1(Char('#')),
+				p: Many1(Char[string]('#')),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -232,7 +232,7 @@ func TestMany1(t *testing.T) {
 			name:  "no match should fail",
 			input: "abc",
 			args: args{
-				p: Many1(Char('#')),
+				p: Many1(Char[string]('#')),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -242,7 +242,7 @@ func TestMany1(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Many1(Char('#')),
+				p: Many1(Char[string]('#')),
 			},
 			wantErr:       true,
 			wantOutput:    nil,
@@ -278,7 +278,7 @@ func TestMany1DetectsInfiniteLoops(t *testing.T) {
 
 	// Digit0 accepts empty input, and would cause an infinite loop if not detected
 	input := "abcdef"
-	parser := Many1(Digit0())
+	parser := Many1(Digit0[string]())
 
 	result := parser(input)
 
@@ -288,7 +288,7 @@ func TestMany1DetectsInfiniteLoops(t *testing.T) {
 }
 
 func BenchmarkMany1(b *testing.B) {
-	parser := Many1(Char('#'))
+	parser := Many1(Char[string]('#'))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

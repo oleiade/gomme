@@ -23,7 +23,7 @@ func TestTakeWhileOneOf(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "abc123",
 			args: args{
-				p: TakeWhileOneOf('a', 'b', 'c'),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       false,
 			wantOutput:    "abc",
@@ -33,7 +33,7 @@ func TestTakeWhileOneOf(t *testing.T) {
 			name:  "no match should fail",
 			input: "123",
 			args: args{
-				p: TakeWhileOneOf('a', 'b', 'c'),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -43,7 +43,7 @@ func TestTakeWhileOneOf(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: TakeWhileOneOf('a', 'b', 'c'),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -73,7 +73,7 @@ func TestTakeWhileOneOf(t *testing.T) {
 }
 
 func BenchmarkTakeWhileOneOf(b *testing.B) {
-	p := TakeWhileOneOf('a', 'b', 'c')
+	p := TakeWhileOneOf[string]('a', 'b', 'c')
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -99,7 +99,7 @@ func TestTakeUntil(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "abc123",
 			args: args{
-				p: TakeUntil(Digit1()),
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "abc",
@@ -109,7 +109,7 @@ func TestTakeUntil(t *testing.T) {
 			name:  "immediately matching parser should succeed",
 			input: "123",
 			args: args{
-				p: TakeUntil(Digit1()),
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "",
@@ -119,7 +119,7 @@ func TestTakeUntil(t *testing.T) {
 			name:  "no match should fail",
 			input: "abcdef",
 			args: args{
-				p: TakeUntil(Digit1()),
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -129,7 +129,7 @@ func TestTakeUntil(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: TakeUntil(Digit1()),
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -159,7 +159,7 @@ func TestTakeUntil(t *testing.T) {
 }
 
 func BenchmarkTakeUntil(b *testing.B) {
-	p := TakeUntil(Digit1())
+	p := TakeUntil(Digit1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -185,7 +185,7 @@ func TestTake(t *testing.T) {
 			name:  "taking less than input size should succeed",
 			input: "1234567",
 			args: args{
-				p: Take(6),
+				p: Take[string](6),
 			},
 			wantErr:       false,
 			wantOutput:    "123456",
@@ -195,7 +195,7 @@ func TestTake(t *testing.T) {
 			name:  "taking exact input size should succeed",
 			input: "123456",
 			args: args{
-				p: Take(6),
+				p: Take[string](6),
 			},
 			wantErr:       false,
 			wantOutput:    "123456",
@@ -205,7 +205,7 @@ func TestTake(t *testing.T) {
 			name:  "taking more than input size should fail",
 			input: "123",
 			args: args{
-				p: Take(6),
+				p: Take[string](6),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -215,7 +215,7 @@ func TestTake(t *testing.T) {
 			name:  "taking from empty input should fail",
 			input: "",
 			args: args{
-				p: Take(6),
+				p: Take[string](6),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -245,7 +245,7 @@ func TestTake(t *testing.T) {
 }
 
 func BenchmarkTake(b *testing.B) {
-	p := Take(6)
+	p := Take[string](6)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -271,7 +271,7 @@ func TestTakeWhileMN(t *testing.T) {
 			name:  "parsing input with enough characters and partially matching predicated should succeed",
 			input: "latin123",
 			args: args{
-				p: TakeWhileMN(3, 6, IsAlpha),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       false,
 			wantOutput:    "latin",
@@ -281,7 +281,7 @@ func TestTakeWhileMN(t *testing.T) {
 			name:  "parsing input longer than atLeast and atMost should succeed",
 			input: "lengthy",
 			args: args{
-				p: TakeWhileMN(3, 6, IsAlpha),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       false,
 			wantOutput:    "length",
@@ -291,7 +291,7 @@ func TestTakeWhileMN(t *testing.T) {
 			name:  "parsing input longer than atLeast and shorter than atMost should succeed",
 			input: "latin",
 			args: args{
-				p: TakeWhileMN(3, 6, IsAlpha),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       false,
 			wantOutput:    "latin",
@@ -301,7 +301,7 @@ func TestTakeWhileMN(t *testing.T) {
 			name:  "parsing too short input should fail",
 			input: "ed",
 			args: args{
-				p: TakeWhileMN(3, 6, IsAlpha),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -311,7 +311,7 @@ func TestTakeWhileMN(t *testing.T) {
 			name:  "parsing with non-matching predicate should fail",
 			input: "12345",
 			args: args{
-				p: TakeWhileMN(3, 6, IsAlpha),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -341,7 +341,7 @@ func TestTakeWhileMN(t *testing.T) {
 }
 
 func BenchmarkTakeWhileMN(b *testing.B) {
-	p := TakeWhileMN(3, 6, IsAlpha)
+	p := TakeWhileMN[string](3, 6, IsAlpha)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -372,7 +372,7 @@ func TestMap(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "1abc\r\n",
 			args: args{
-				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
 					left, _ := strconv.Atoi(p.Left)
 					return TestStruct{
 						Foo: left,
@@ -391,7 +391,7 @@ func TestMap(t *testing.T) {
 			name:  "failing parser should fail",
 			input: "abc\r\n",
 			args: args{
-				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
 					left, _ := strconv.Atoi(p.Left)
 
 					return TestStruct{
@@ -408,7 +408,7 @@ func TestMap(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
 					left, _ := strconv.Atoi(p.Left)
 
 					return TestStruct{
@@ -451,7 +451,7 @@ func BenchmarkMap(b *testing.B) {
 		Bar string
 	}
 
-	p := Map(Pair(Digit1(), TakeUntil(CRLF())), func(p PairContainer[string, string]) (TestStruct, error) {
+	p := Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
 		left, _ := strconv.Atoi(p.Left)
 
 		return TestStruct{
@@ -484,7 +484,7 @@ func TestOptional(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "\r\n123",
 			args: args{
-				p: Optional(CRLF()),
+				p: Optional(CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "\r\n",
@@ -494,7 +494,7 @@ func TestOptional(t *testing.T) {
 			name:  "no match should succeed",
 			input: "123",
 			args: args{
-				p: Optional(CRLF()),
+				p: Optional(CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "",
@@ -504,7 +504,7 @@ func TestOptional(t *testing.T) {
 			name:  "empty input should succeed",
 			input: "",
 			args: args{
-				p: Optional(CRLF()),
+				p: Optional(CRLF[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "",
@@ -534,7 +534,7 @@ func TestOptional(t *testing.T) {
 }
 
 func BenchmarkOptional(b *testing.B) {
-	p := Optional(CRLF())
+	p := Optional(CRLF[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -560,7 +560,7 @@ func TestPeek(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "abcd;",
 			args: args{
-				p: Peek(Alpha1()),
+				p: Peek(Alpha1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    "abcd",
@@ -570,7 +570,7 @@ func TestPeek(t *testing.T) {
 			name:  "non matching parser should fail",
 			input: "123;",
 			args: args{
-				p: Peek(Alpha1()),
+				p: Peek(Alpha1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -600,7 +600,7 @@ func TestPeek(t *testing.T) {
 }
 
 func BenchmarkPeek(b *testing.B) {
-	p := Peek(Alpha1())
+	p := Peek(Alpha1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -626,7 +626,7 @@ func TestRecognize(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "123abc",
 			args: args{
-				p: Recognize(Pair(Digit1(), Alpha1())),
+				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
 			},
 			wantErr:       false,
 			wantOutput:    "123abc",
@@ -636,7 +636,7 @@ func TestRecognize(t *testing.T) {
 			name:  "no prefix match should fail",
 			input: "abc",
 			args: args{
-				p: Recognize(Pair(Digit1(), Alpha1())),
+				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -646,7 +646,7 @@ func TestRecognize(t *testing.T) {
 			name:  "no parser match should fail",
 			input: "123",
 			args: args{
-				p: Recognize(Pair(Digit1(), Alpha1())),
+				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -656,7 +656,7 @@ func TestRecognize(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Recognize(Pair(Digit1(), Alpha1())),
+				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -686,7 +686,7 @@ func TestRecognize(t *testing.T) {
 }
 
 func BenchmarkRecognize(b *testing.B) {
-	p := Recognize(Pair(Digit1(), Alpha1()))
+	p := Recognize(Pair(Digit1[string](), Alpha1[string]()))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -712,7 +712,7 @@ func TestAssign(t *testing.T) {
 			name:  "matching parser should succeed",
 			input: "abcd",
 			args: args{
-				p: Assign(1234, Alpha1()),
+				p: Assign(1234, Alpha1[string]()),
 			},
 			wantErr:       false,
 			wantOutput:    1234,
@@ -722,7 +722,7 @@ func TestAssign(t *testing.T) {
 			name:  "non matching parser should fail",
 			input: "123abcd;",
 			args: args{
-				p: Assign(1234, Alpha1()),
+				p: Assign(1234, Alpha1[string]()),
 			},
 			wantErr:       true,
 			wantOutput:    0,
@@ -752,7 +752,7 @@ func TestAssign(t *testing.T) {
 }
 
 func BenchmarkAssign(b *testing.B) {
-	p := Assign(1234, Alpha1())
+	p := Assign(1234, Alpha1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
