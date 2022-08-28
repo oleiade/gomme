@@ -83,7 +83,7 @@ func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
 		pos := 0
 		for ; pos < len(input); pos++ {
 			current := input[pos:]
-			res := p(current)
+			res := parse(current)
 			if res.Err == nil {
 				return Success(input[:pos], input[pos:])
 			}
@@ -146,9 +146,9 @@ func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parse
 }
 
 // Map applies a function to the result of a parser.
-func Map[I Bytes, PO any, MO any](p Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
+func Map[I Bytes, PO any, MO any](parse Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
 	return func(input I) Result[MO, I] {
-		res := p(input)
+		res := parse(input)
 		if res.Err != nil {
 			return Failure[I, MO](NewGenericError(input, "map"), input)
 		}
@@ -167,9 +167,9 @@ func Map[I Bytes, PO any, MO any](p Parser[I, PO], fn func(PO) (MO, error)) Pars
 //
 // N.B: unless a FatalError is encountered, Optional will ignore
 // any parsing failures and errors.
-func Optional[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
+func Optional[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
 	return func(input I) Result[O, I] {
-		result := p(input)
+		result := parse(input)
 		if result.Err != nil && !result.Err.IsFatal() {
 			result.Err = nil
 		}
@@ -180,9 +180,9 @@ func Optional[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
 
 // Peek tries to apply the provided parser without consuming any input.
 // It effectively allows to look ahead in the input.
-func Peek[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
+func Peek[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
 	return func(input I) Result[O, I] {
-		result := p(input)
+		result := parse(input)
 		if result.Err != nil {
 			return Failure[I, O](result.Err, input)
 		}
@@ -193,9 +193,9 @@ func Peek[I Bytes, O any](p Parser[I, O]) Parser[I, O] {
 
 // Recognize returns the consumed input as the produced value when
 // the provided parser succeeds.
-func Recognize[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
+func Recognize[I Bytes, O any](parse Parser[I, O]) Parser[I, I] {
 	return func(input I) Result[I, I] {
-		result := p(input)
+		result := parse(input)
 		if result.Err != nil {
 			return Failure[I, I](result.Err, input)
 		}
@@ -206,9 +206,9 @@ func Recognize[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
 
 // Assign returns the provided value if the parser succeeds, otherwise
 // it returns an error result.
-func Assign[I Bytes, O1, O2 any](value O1, p Parser[I, O2]) Parser[I, O1] {
+func Assign[I Bytes, O1, O2 any](value O1, parse Parser[I, O2]) Parser[I, O1] {
 	return func(input I) Result[O1, I] {
-		result := p(input)
+		result := parse(input)
 		if result.Err != nil {
 			return Failure[I, O1](result.Err, input)
 		}

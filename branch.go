@@ -6,13 +6,13 @@ package gomme
 // If none of the parsers succeed, this combinator produces an error Result.
 func Alternative[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, O] {
 	return func(input I) Result[O, I] {
-		for _, p := range parsers {
-			res := p(input)
-			if res.Err == nil {
-				return res
+		for _, parse := range parsers {
+			result := parse(input)
+			if result.Err == nil {
+				return result
 			}
 		}
 
-		return Failure[I, O](NewGenericError(input, "alternative"), input)
+		return Failure[I, O](NewGenericError(input, "Alternative"), input)
 	}
 }

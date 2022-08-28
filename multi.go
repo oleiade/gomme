@@ -1,7 +1,7 @@
 package gomme
 
 // Count runs the provided parser `count` times.
-func Count[I Bytes, O any](p Parser[I, O], count uint) Parser[I, []O] {
+func Count[I Bytes, O any](parse Parser[I, O], count uint) Parser[I, []O] {
 	return func(input I) Result[[]O, I] {
 		if len(input) == 0 || count == 0 {
 			return Failure[I, []O](NewGenericError(input, "count"), input)
@@ -10,7 +10,7 @@ func Count[I Bytes, O any](p Parser[I, O], count uint) Parser[I, []O] {
 		outputs := make([]O, 0, int(count))
 		remaining := input
 		for i := 0; uint(i) < count; i++ {
-			result := p(remaining)
+			result := parse(remaining)
 			if result.Err != nil {
 				return Failure[I, []O](result.Err, input)
 			}
@@ -29,13 +29,13 @@ func Count[I Bytes, O any](p Parser[I, O], count uint) Parser[I, []O] {
 // Note that Many0 will succeed even if the parser fails to match at all. It will
 // however fail if the provided parser accepts empty inputs (such as `Digit0`, or
 // `Alpha0`) in order to prevent infinite loops.
-func Many0[I Bytes, O any](p Parser[I, O]) Parser[I, []O] {
+func Many0[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 	return func(input I) Result[[]O, I] {
 		results := []O{}
 
 		remaining := input
 		for {
-			res := p(remaining)
+			res := parse(remaining)
 			if res.Err != nil {
 				return Success(results, remaining)
 			}
@@ -58,9 +58,9 @@ func Many0[I Bytes, O any](p Parser[I, O]) Parser[I, []O] {
 //
 // Note that Many1 will fail if the provided parser accepts empty
 // inputs (such as `Digit0`, or `Alpha0`) in order to prevent infinite loops.
-func Many1[I Bytes, O any](p Parser[I, O]) Parser[I, []O] {
+func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 	return func(input I) Result[[]O, I] {
-		first := p(input)
+		first := parse(input)
 		if first.Err != nil {
 			return Failure[I, []O](first.Err, input)
 		}
@@ -75,7 +75,7 @@ func Many1[I Bytes, O any](p Parser[I, O]) Parser[I, []O] {
 		remaining := first.Remaining
 
 		for {
-			res := p(remaining)
+			res := parse(remaining)
 			if res.Err != nil {
 				return Success(results, remaining)
 			}

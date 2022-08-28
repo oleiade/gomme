@@ -9,7 +9,7 @@
 - [ ] Document Recognize as explicitly as possible
 - [ ] Make sure the Failure messages are properly cased
 - [ ] Add an `ErrInfiniteLoop` (`Many0`)
-- [ ] Rename `p` parser arguments to `parse` for clearer code
+- [x] Rename `p` parser arguments to `parse` for clearer code
 - [x] Add `Many0` and `Many1` parsers
 
 ## Maybes
