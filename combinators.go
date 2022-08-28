@@ -18,7 +18,7 @@ type Separator interface {
 // Result is a generic type alias for Result
 type Result[Output any, Remaining Bytes] struct {
 	Output    Output
-	Err       *GenericError[Remaining]
+	Err       *Error[Remaining]
 	Remaining Remaining
 }
 
@@ -34,7 +34,7 @@ func Success[O any, Remaining Bytes](output O, r Remaining) Result[O, Remaining]
 // Failure creates a Result with an error set from
 // the result of a failed parsing.
 // TODO: The Error type could be generic too
-func Failure[I Bytes, O any](err *GenericError[I], input I) Result[O, I] {
+func Failure[I Bytes, O any](err *Error[I], input I) Result[O, I] {
 	var output O
 	return Result[O, I]{output, err, input}
 }
@@ -52,7 +52,7 @@ func TakeWhileOneOf[I Bytes](collection ...rune) Parser[I, I] {
 
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, expected), input)
+			return Failure[I, I](NewError(input, expected), input)
 		}
 
 		pos := 0
@@ -60,7 +60,7 @@ func TakeWhileOneOf[I Bytes](collection ...rune) Parser[I, I] {
 			_, exists := index[rune(input[pos])]
 			if !exists {
 				if pos == 0 {
-					return Failure[I, I](NewGenericError(input, expected), input)
+					return Failure[I, I](NewError(input, expected), input)
 				}
 
 				break
@@ -74,10 +74,10 @@ func TakeWhileOneOf[I Bytes](collection ...rune) Parser[I, I] {
 // TakeUntil parses any number of characters until the provided parser is successful.
 // If the provided parser is not successful, the parser fails, and the entire input is
 // returned as the Result's Remaining.
-func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
+func TakeUntil[I Bytes, O any](parse Parser[I, O]) Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "take until"), input)
+			return Failure[I, I](NewError(input, "TakeUntil"), input)
 		}
 
 		pos := 0
@@ -91,7 +91,7 @@ func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
 			continue
 		}
 
-		return Failure[I, I](NewGenericError(input, "take until"), input)
+		return Failure[I, I](NewError(input, "TakeUntil"), input)
 	}
 }
 
@@ -99,11 +99,11 @@ func TakeUntil[I Bytes, O any](p Parser[I, O]) Parser[I, I] {
 func Take[I Bytes](count uint) Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 && count > 0 {
-			return Failure[I, I](NewGenericError(input, "take until"), input)
+			return Failure[I, I](NewError(input, "TakeUntil"), input)
 		}
 
 		if uint(len(input)) < count {
-			return Failure[I, I](NewGenericError(input, "take"), input)
+			return Failure[I, I](NewError(input, "Take"), input)
 		}
 
 		return Success(input[:count], input[count:])
@@ -113,14 +113,14 @@ func Take[I Bytes](count uint) Parser[I, I] {
 func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+			return Failure[I, I](NewError(input, "TakeWhileMN"), input)
 		}
 
 		// Input is shorter than the minimum expected matching length,
 		// it is thus not possible to match it within the established
 		// constraints.
 		if uint(len(input)) < atLeast {
-			return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+			return Failure[I, I](NewError(input, "TakeWhileMN"), input)
 		}
 
 		lastValidPos := 0
@@ -132,7 +132,7 @@ func TakeWhileMN[I Bytes](atLeast, atMost uint, predicate func(rune) bool) Parse
 			matched := predicate(c)
 			if !matched {
 				if uint(idx) < atLeast {
-					return Failure[I, I](NewGenericError(input, "TakeWhileMN"), input)
+					return Failure[I, I](NewError(input, "TakeWhileMN"), input)
 				}
 
 				return Success(input[:idx], input[idx:])
@@ -150,12 +150,12 @@ func Map[I Bytes, PO any, MO any](parse Parser[I, PO], fn func(PO) (MO, error)) 
 	return func(input I) Result[MO, I] {
 		res := parse(input)
 		if res.Err != nil {
-			return Failure[I, MO](NewGenericError(input, "map"), input)
+			return Failure[I, MO](NewError(input, "Map"), input)
 		}
 
 		output, err := fn(res.Output)
 		if err != nil {
-			return Failure[I, MO](NewGenericError(input, err.Error()), input)
+			return Failure[I, MO](NewError(input, err.Error()), input)
 		}
 
 		return Success(output, res.Remaining)

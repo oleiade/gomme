@@ -4,7 +4,7 @@ package gomme
 func Count[I Bytes, O any](parse Parser[I, O], count uint) Parser[I, []O] {
 	return func(input I) Result[[]O, I] {
 		if len(input) == 0 || count == 0 {
-			return Failure[I, []O](NewGenericError(input, "count"), input)
+			return Failure[I, []O](NewError(input, "Count"), input)
 		}
 
 		outputs := make([]O, 0, int(count))
@@ -43,7 +43,7 @@ func Many0[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(res.Remaining) == len(remaining) {
-				return Failure[I, []O](NewGenericError(input, "Many0"), input)
+				return Failure[I, []O](NewError(input, "Many0"), input)
 			}
 
 			results = append(results, res.Output)
@@ -68,7 +68,7 @@ func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 		// Checking for infinite loops, if nothing was consumed,
 		// the provided parser would make us go around in circles.
 		if len(first.Remaining) == len(input) {
-			return Failure[I, []O](NewGenericError(input, "Many0"), input)
+			return Failure[I, []O](NewError(input, "Many1"), input)
 		}
 
 		results := []O{first.Output}
@@ -83,7 +83,7 @@ func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(res.Remaining) == len(remaining) {
-				return Failure[I, []O](NewGenericError(input, "Many0"), input)
+				return Failure[I, []O](NewError(input, "Many1"), input)
 			}
 
 			results = append(results, res.Output)

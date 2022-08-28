@@ -13,6 +13,6 @@ func Alternative[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, O] {
 			}
 		}
 
-		return Failure[I, O](NewGenericError(input, "Alternative"), input)
+		return Failure[I, O](NewError(input, "Alternative"), input)
 	}
 }

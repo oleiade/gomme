@@ -15,12 +15,12 @@ func Pair[I Bytes, LO, RO any, LP Parser[I, LO], RP Parser[I, RO]](leftParser LP
 	return func(input I) Result[PairContainer[LO, RO], I] {
 		leftResult := leftParser(input)
 		if leftResult.Err != nil {
-			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
+			return Failure[I, PairContainer[LO, RO]](NewError(input, "Pair"), input)
 		}
 
 		rightResult := rightParser(leftResult.Remaining)
 		if rightResult.Err != nil {
-			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
+			return Failure[I, PairContainer[LO, RO]](NewError(input, "Pair"), input)
 		}
 
 		return Success(PairContainer[LO, RO]{leftResult.Output, rightResult.Output}, rightResult.Remaining)
@@ -56,17 +56,17 @@ func SeparatedPair[I Bytes, LO, RO any, S Separator, LP Parser[I, LO], SP Parser
 	return func(input I) Result[PairContainer[LO, RO], I] {
 		leftResult := leftParser(input)
 		if leftResult.Err != nil {
-			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "separated pair"), input)
+			return Failure[I, PairContainer[LO, RO]](NewError(input, "SeparatedPair"), input)
 		}
 
 		sepResult := separator(leftResult.Remaining)
 		if sepResult.Err != nil {
-			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "separated pair"), input)
+			return Failure[I, PairContainer[LO, RO]](NewError(input, "SeparatedPair"), input)
 		}
 
 		rightResult := rightParser(sepResult.Remaining)
 		if rightResult.Err != nil {
-			return Failure[I, PairContainer[LO, RO]](NewGenericError(input, "pair"), input)
+			return Failure[I, PairContainer[LO, RO]](NewError(input, "SeparatedPair"), input)
 		}
 
 		return Success(PairContainer[LO, RO]{leftResult.Output, rightResult.Output}, rightResult.Remaining)

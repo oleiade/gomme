@@ -11,7 +11,7 @@ import (
 func Char[I Bytes](character rune) Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 || rune(input[0]) != character {
-			return Failure[I, rune](NewGenericError(input, string(character)), input)
+			return Failure[I, rune](NewError(input, string(character)), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -22,7 +22,7 @@ func Char[I Bytes](character rune) Parser[I, rune] {
 func AnyChar[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 {
-			return Failure[I, rune](NewGenericError(input, "any character"), input)
+			return Failure[I, rune](NewError(input, "AnyChar"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -57,11 +57,11 @@ func Alpha0[I Bytes]() Parser[I, I] {
 func Alpha1[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "alpha1"), input)
+			return Failure[I, I](NewError(input, "Alpha1"), input)
 		}
 
 		if (input[0] < 'a' || input[0] > 'z') && (input[0] < 'A' || input[0] > 'Z') {
-			return Failure[I, I](NewGenericError(input, "alpha1"), input)
+			return Failure[I, I](NewError(input, "Alpha1"), input)
 		}
 
 		lastAlphaPos := 1
@@ -105,11 +105,11 @@ func Alphanumeric0[I Bytes]() Parser[I, I] {
 func Alphanumeric1[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
 		if !IsAlphanumeric(rune(input[0])) {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
 		lastDigitPos := 1
@@ -153,11 +153,11 @@ func Digit0[I Bytes]() Parser[I, I] {
 func Digit1[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
 		if input[0] < '0' || input[0] > '9' {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "Digit1"), input)
 		}
 
 		lastDigitPos := 1
@@ -201,11 +201,11 @@ func HexDigit0[I Bytes]() Parser[I, I] {
 func HexDigit1[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) == 0 {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "HexDigit1"), input)
 		}
 
 		if !IsHexDigit(rune(input[0])) {
-			return Failure[I, I](NewGenericError(input, "digit1"), input)
+			return Failure[I, I](NewError(input, "HexDigit1"), input)
 		}
 
 		lastDigitPos := 1
@@ -225,7 +225,7 @@ func HexDigit1[I Bytes]() Parser[I, I] {
 func LF[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 || input[0] != '\n' {
-			return Failure[I, rune](NewGenericError(input, "line feed ('\\n')"), input)
+			return Failure[I, rune](NewError(input, "LF"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -236,7 +236,7 @@ func LF[I Bytes]() Parser[I, rune] {
 func CR[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 || input[0] != '\r' {
-			return Failure[I, rune](NewGenericError(input, "carriage return ('\\r')"), input)
+			return Failure[I, rune](NewError(input, "CR"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -247,7 +247,7 @@ func CR[I Bytes]() Parser[I, rune] {
 func CRLF[I Bytes]() Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if len(input) < 2 || (input[0] != '\r' || input[1] != '\n') {
-			return Failure[I, I](NewGenericError(input, "CRLF ('\\r\\n')"), input)
+			return Failure[I, I](NewError(input, "CRLF"), input)
 		}
 
 		return Success(input[:2], input[2:])
@@ -258,7 +258,7 @@ func CRLF[I Bytes]() Parser[I, I] {
 func OneOf[I Bytes](collection ...rune) Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 {
-			return Failure[I, rune](NewGenericError(input, "OneOf"), input)
+			return Failure[I, rune](NewError(input, "OneOf"), input)
 		}
 
 		for _, c := range collection {
@@ -267,7 +267,7 @@ func OneOf[I Bytes](collection ...rune) Parser[I, rune] {
 			}
 		}
 
-		return Failure[I, rune](NewGenericError(input, "OneOf"), input)
+		return Failure[I, rune](NewError(input, "OneOf"), input)
 	}
 }
 
@@ -275,11 +275,11 @@ func OneOf[I Bytes](collection ...rune) Parser[I, rune] {
 func Satisfy[I Bytes](predicate func(rune) bool) Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 {
-			return Failure[I, rune](NewGenericError(input, "satisfy"), input)
+			return Failure[I, rune](NewError(input, "Satisfy"), input)
 		}
 
 		if !predicate(rune(input[0])) {
-			return Failure[I, rune](NewGenericError(input, "satisfy"), input)
+			return Failure[I, rune](NewError(input, "Satisfy"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -290,7 +290,7 @@ func Satisfy[I Bytes](predicate func(rune) bool) Parser[I, rune] {
 func Space[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 || input[0] != ' ' {
-			return Failure[I, rune](NewGenericError(input, "space"), input)
+			return Failure[I, rune](NewError(input, "Space"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -301,7 +301,7 @@ func Space[I Bytes]() Parser[I, rune] {
 func Tab[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
 		if len(input) == 0 || input[0] != '\t' {
-			return Failure[I, rune](NewGenericError(input, "tab"), input)
+			return Failure[I, rune](NewError(input, "Tab"), input)
 		}
 
 		return Success(rune(input[0]), input[1:])
@@ -314,7 +314,7 @@ func Tab[I Bytes]() Parser[I, rune] {
 func Token[I Bytes](token string) Parser[I, I] {
 	return func(input I) Result[I, I] {
 		if !strings.HasPrefix(string(input), token) {
-			return Failure[I, I](NewGenericError(input, fmt.Sprintf("tag(%s)", token)), input)
+			return Failure[I, I](NewError(input, fmt.Sprintf("Token(%s)", token)), input)
 		}
 
 		return Success(input[:len(token)], input[len(token):])
@@ -329,12 +329,12 @@ func Int64[I Bytes]() Parser[I, int64] {
 
 		result := parser(input)
 		if result.Err != nil {
-			return Failure[I, int64](NewGenericError(input, "int64"), input)
+			return Failure[I, int64](NewError(input, "Int64"), input)
 		}
 
 		n, err := strconv.ParseInt(string(result.Output), 10, 64)
 		if err != nil {
-			return Failure[I, int64](NewGenericError(input, "int64"), input)
+			return Failure[I, int64](NewError(input, "Int64"), input)
 		}
 
 		return Success(n, result.Remaining)
@@ -349,12 +349,12 @@ func Int8[I Bytes]() Parser[I, int8] {
 
 		result := parser(input)
 		if result.Err != nil {
-			return Failure[I, int8](NewGenericError(input, "int8"), input)
+			return Failure[I, int8](NewError(input, "Int8"), input)
 		}
 
 		n, err := strconv.ParseInt(string(result.Output), 10, 8)
 		if err != nil {
-			return Failure[I, int8](NewGenericError(input, "int8"), input)
+			return Failure[I, int8](NewError(input, "Int8"), input)
 		}
 
 		return Success(int8(n), result.Remaining)
@@ -369,12 +369,12 @@ func UInt8[I Bytes]() Parser[I, uint8] {
 
 		result := parser(input)
 		if result.Err != nil {
-			return Failure[I, uint8](NewGenericError(input, "uint8"), input)
+			return Failure[I, uint8](NewError(input, "UInt8"), input)
 		}
 
 		n, err := strconv.ParseUint(string(result.Output), 10, 8)
 		if err != nil {
-			return Failure[I, uint8](NewGenericError(input, "uint8"), input)
+			return Failure[I, uint8](NewError(input, "UInt8"), input)
 		}
 
 		return Success(uint8(n), result.Remaining)
