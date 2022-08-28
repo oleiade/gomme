@@ -1,7 +1,7 @@
+# TODOS
+
 ## Dos
 
-- [ ] Rename `Preceded` to `Prefixed`
-- [ ] Rename `Terminated` to `Suffixed`
 - [ ] Create `Bytes` interface type for bytes file's content
 - [ ] Create `String` or `Characters` interface type for characters file's content
 - [ ] Add Examples
@@ -17,6 +17,10 @@
 ## Maybes
 
 - [ ] Rename project to `crayon`?
+- [ ] Rename `Preceded` to `Prefixed`
+- [ ] Rename `Terminated` to `Suffixed`
+- [ ] Rename `Sequence` to `List`?
+- [ ] Introduce `SeparatedList` as a result of previous?
 - [ ] Rename `Satisfy` to `Satisfies`?
 
 ## Track

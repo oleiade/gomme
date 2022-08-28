@@ -1,3 +1,8 @@
+// Package gomme implements a parser combinator library.
+// It provides a toolkit for developers to build reliable, fast, flexible, and easy-to-develop and maintain parsers
+// for both textual and binary formats. It extensively uses the recent introduction of Generics in the Go programming
+// language to offer flexibility in how combinators can be mixed and matched to produce the desired output while
+// providing as much compile-time type safety as possible.
 package gomme
 
 import "fmt"

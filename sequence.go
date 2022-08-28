@@ -11,7 +11,9 @@ func Delimited[I Bytes, OP, O, OS any](prefix Parser[I, OP], parser Parser[I, O]
 
 // Pair applies two parsers and returns a Result containing a slice of
 // size 2 as its output.
-func Pair[I Bytes, LO, RO any, LP Parser[I, LO], RP Parser[I, RO]](leftParser LP, rightParser RP) Parser[I, PairContainer[LO, RO]] {
+func Pair[I Bytes, LO, RO any, LP Parser[I, LO], RP Parser[I, RO]](
+	leftParser LP, rightParser RP,
+) Parser[I, PairContainer[LO, RO]] {
 	return func(input I) Result[PairContainer[LO, RO], I] {
 		leftResult := leftParser(input)
 		if leftResult.Err != nil {
@@ -52,7 +54,9 @@ func Preceded[I Bytes, OP, O any](prefix Parser[I, OP], parser Parser[I, O]) Par
 // size 2 as its output. The first element of the slice is the result of the left parser,
 // and the second element is the result of the right parser. The result of the separator parser
 // is discarded.
-func SeparatedPair[I Bytes, LO, RO any, S Separator, LP Parser[I, LO], SP Parser[I, S], RP Parser[I, RO]](leftParser LP, separator SP, rightParser RP) Parser[I, PairContainer[LO, RO]] {
+func SeparatedPair[I Bytes, LO, RO any, S Separator, LP Parser[I, LO], SP Parser[I, S], RP Parser[I, RO]](
+	leftParser LP, separator SP, rightParser RP,
+) Parser[I, PairContainer[LO, RO]] {
 	return func(input I) Result[PairContainer[LO, RO], I] {
 		leftResult := leftParser(input)
 		if leftResult.Err != nil {

@@ -411,6 +411,7 @@ func IsHexDigit(c rune) bool {
 	return IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
+// IsControl returns true if the rune is a control character.
 func IsControl(c rune) bool {
 	return c < 32 || c == 127
 }
