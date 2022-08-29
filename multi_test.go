@@ -295,3 +295,219 @@ func BenchmarkMany1(b *testing.B) {
 		parser("###")
 	}
 }
+
+func TestSeparatedList0(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, []string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    []string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abc,abc,abc",
+			args: args{
+				p: SeparatedList0(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc", "abc", "abc"},
+			wantRemaining: "",
+		},
+		{
+			name:  "matching parser and missing separator should succeed",
+			input: "abc123abc",
+			args: args{
+				p: SeparatedList0(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc"},
+			wantRemaining: "123abc",
+		},
+		{
+			name:  "parser with separator but non-matching right side should succeed",
+			input: "abc,def",
+			args: args{
+				p: SeparatedList0(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc"},
+			wantRemaining: ",def",
+		},
+		{
+			name:  "parser matching on the right of the separator should succeed",
+			input: "def,abc",
+			args: args{
+				p: SeparatedList0(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{},
+			wantRemaining: "def,abc",
+		},
+		{
+			name:  "empty input should succeed",
+			input: "",
+			args: args{
+				p: SeparatedList0(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{},
+			wantRemaining: "",
+		},
+		{
+			name:  "parsing input without separator should succeed",
+			input: "123",
+			args: args{
+				p: SeparatedList0(Digit0[string](), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"123"},
+			wantRemaining: "",
+		},
+		{
+			name:  "using a parser accepting empty input should fail",
+			input: "",
+			args: args{
+				p: SeparatedList0(Digit0[string](), Char[string](',')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func BenchmarkSeparatedList0(t *testing.B) {
+	parser := SeparatedList0(Char[string]('#'), Char[string](','))
+
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		parser("#,#,#")
+	}
+}
+
+func TestSeparatedList1(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, []string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    []string
+		wantRemaining string
+	}{
+		{
+			name:  "matching parser should succeed",
+			input: "abc,abc,abc",
+			args: args{
+				p: SeparatedList1(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc", "abc", "abc"},
+			wantRemaining: "",
+		},
+		{
+			name:  "matching parser and missing separator should succeed",
+			input: "abc123abc",
+			args: args{
+				p: SeparatedList1(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc"},
+			wantRemaining: "123abc",
+		},
+		{
+			name:  "parser with separator but non-matching right side should succeed",
+			input: "abc,def",
+			args: args{
+				p: SeparatedList1(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       false,
+			wantOutput:    []string{"abc"},
+			wantRemaining: ",def",
+		},
+		{
+			name:  "parser matching on the right of the separator should succeed",
+			input: "def,abc",
+			args: args{
+				p: SeparatedList1(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "def,abc",
+		},
+		{
+			name:  "empty input should fail",
+			input: "",
+			args: args{
+				p: SeparatedList1(Token[string]("abc"), Char[string](',')),
+			},
+			wantErr:       true,
+			wantOutput:    nil,
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			// testify makes it easier comparing slices
+			assert.Equal(t,
+				tc.wantOutput, gotResult.Output,
+				"got output %v, want output %v", gotResult.Output, tc.wantOutput,
+			)
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func BenchmarkSeparatedList1(t *testing.B) {
+	parser := SeparatedList1(Char[string]('#'), Char[string](','))
+
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		parser("#,#,#")
+	}
+}
