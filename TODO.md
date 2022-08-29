@@ -10,6 +10,7 @@
 - [ ] Sort Out Fatal/Non-Fatal errors (distinguish whether a parser failed in an expected manner, or if the whole parsing should be interrupted)
 - [ ] Reduce Int8/Int64 allocations (their parsers could be somewhat simplified?)
 - [ ] Add combinator to parse whitespace (+ helper for multispace0/1?)
+- [ ] Refactor TakeWhileOneOf to be "just" TakeWhile
 - [x] Add Benchmarks
 - [x] Make sure the Failure messages are properly cased
 - [x] Rename `p` parser arguments to `parse` for clearer code

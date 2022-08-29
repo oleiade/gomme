@@ -1,9 +1,7 @@
 package gomme
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 )
 
 // Char parses a single character and matches it with
@@ -305,19 +303,6 @@ func Tab[I Bytes]() Parser[I, rune] {
 		}
 
 		return Success(rune(input[0]), input[1:])
-	}
-}
-
-// Token parses a token from the input, and returns the part of the input that
-// matched the token.
-// If the token could not be found, the parser returns an error result.
-func Token[I Bytes](token string) Parser[I, I] {
-	return func(input I) Result[I, I] {
-		if !strings.HasPrefix(string(input), token) {
-			return Failure[I, I](NewError(input, fmt.Sprintf("Token(%s)", token)), input)
-		}
-
-		return Success(input[:len(token)], input[len(token):])
 	}
 }
 

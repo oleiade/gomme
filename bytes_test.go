@@ -1,168 +1,147 @@
 package gomme
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 )
 
-func TestMap(t *testing.T) {
+func TestTake(t *testing.T) {
 	t.Parallel()
 
-	type TestStruct struct {
-		Foo int
-		Bar string
-	}
-
 	type args struct {
-		parser Parser[string, TestStruct]
+		p Parser[string, string]
 	}
 	testCases := []struct {
 		name          string
-		input         string
 		args          args
+		input         string
 		wantErr       bool
-		wantOutput    TestStruct
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:  "taking less than input size should succeed",
+			input: "1234567",
+			args: args{
+				p: Take[string](6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "7",
+		},
+		{
+			name:  "taking exact input size should succeed",
+			input: "123456",
+			args: args{
+				p: Take[string](6),
+			},
+			wantErr:       false,
+			wantOutput:    "123456",
+			wantRemaining: "",
+		},
+		{
+			name:  "taking more than input size should fail",
+			input: "123",
+			args: args{
+				p: Take[string](6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "taking from empty input should fail",
+			input: "",
+			args: args{
+				p: Take[string](6),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.args.p(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func BenchmarkTake(b *testing.B) {
+	p := Take[string](6)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p("123456")
+	}
+}
+
+func TestTakeUntil(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		p Parser[string, string]
+	}
+	testCases := []struct {
+		name          string
+		args          args
+		input         string
+		wantErr       bool
+		wantOutput    string
 		wantRemaining string
 	}{
 		{
 			name:  "matching parser should succeed",
-			input: "1abc\r\n",
+			input: "abc123",
 			args: args{
-				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
-					left, _ := strconv.Atoi(p.Left)
-					return TestStruct{
-						Foo: left,
-						Bar: p.Right,
-					}, nil
-				}),
+				p: TakeUntil(Digit1[string]()),
 			},
-			wantErr: false,
-			wantOutput: TestStruct{
-				Foo: 1,
-				Bar: "abc",
-			},
-			wantRemaining: "\r\n",
+			wantErr:       false,
+			wantOutput:    "abc",
+			wantRemaining: "123",
 		},
 		{
-			name:  "failing parser should fail",
-			input: "abc\r\n",
+			name:  "immediately matching parser should succeed",
+			input: "123",
 			args: args{
-				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
-					left, _ := strconv.Atoi(p.Left)
-
-					return TestStruct{
-						Foo: left,
-						Bar: p.Right,
-					}, nil
-				}),
+				p: TakeUntil(Digit1[string]()),
+			},
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "123",
+		},
+		{
+			name:  "no match should fail",
+			input: "abcdef",
+			args: args{
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       true,
-			wantOutput:    TestStruct{},
-			wantRemaining: "abc\r\n",
+			wantOutput:    "",
+			wantRemaining: "abcdef",
 		},
 		{
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
-					left, _ := strconv.Atoi(p.Left)
-
-					return TestStruct{
-						Foo: left,
-						Bar: p.Right,
-					}, nil
-				}),
+				p: TakeUntil(Digit1[string]()),
 			},
 			wantErr:       true,
-			wantOutput:    TestStruct{},
-			wantRemaining: "",
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			gotResult := tc.args.parser(tc.input)
-			if (gotResult.Err != nil) != tc.wantErr {
-				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
-			}
-
-			if gotResult.Output != tc.wantOutput {
-				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
-			}
-
-			if gotResult.Remaining != tc.wantRemaining {
-				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
-			}
-		})
-	}
-}
-
-func BenchmarkMap(b *testing.B) {
-	type TestStruct struct {
-		Foo int
-		Bar string
-	}
-
-	p := Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
-		left, _ := strconv.Atoi(p.Left)
-
-		return TestStruct{
-			Foo: left,
-			Bar: p.Right,
-		}, nil
-	})
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		p("1abc\r\n")
-	}
-}
-
-func TestOptional(t *testing.T) {
-	t.Parallel()
-
-	type args struct {
-		p Parser[string, string]
-	}
-	testCases := []struct {
-		name          string
-		args          args
-		input         string
-		wantErr       bool
-		wantOutput    string
-		wantRemaining string
-	}{
-		{
-			name:  "matching parser should succeed",
-			input: "\r\n123",
-			args: args{
-				p: Optional(CRLF[string]()),
-			},
-			wantErr:       false,
-			wantOutput:    "\r\n",
-			wantRemaining: "123",
-		},
-		{
-			name:  "no match should succeed",
-			input: "123",
-			args: args{
-				p: Optional(CRLF[string]()),
-			},
-			wantErr:       false,
-			wantOutput:    "",
-			wantRemaining: "123",
-		},
-		{
-			name:  "empty input should succeed",
-			input: "",
-			args: args{
-				p: Optional(CRLF[string]()),
-			},
-			wantErr:       false,
 			wantOutput:    "",
 			wantRemaining: "",
 		},
@@ -189,16 +168,16 @@ func TestOptional(t *testing.T) {
 	}
 }
 
-func BenchmarkOptional(b *testing.B) {
-	p := Optional(CRLF[string]())
+func BenchmarkTakeUntil(b *testing.B) {
+	p := TakeUntil(Digit1[string]())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p("\r\n123")
+		p("abc123")
 	}
 }
 
-func TestPeek(t *testing.T) {
+func TestTakeWhileMN(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
@@ -213,24 +192,54 @@ func TestPeek(t *testing.T) {
 		wantRemaining string
 	}{
 		{
-			name:  "matching parser should succeed",
-			input: "abcd;",
+			name:  "parsing input with enough characters and partially matching predicated should succeed",
+			input: "latin123",
 			args: args{
-				p: Peek(Alpha1[string]()),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       false,
-			wantOutput:    "abcd",
-			wantRemaining: "abcd;",
+			wantOutput:    "latin",
+			wantRemaining: "123",
 		},
 		{
-			name:  "non matching parser should fail",
-			input: "123;",
+			name:  "parsing input longer than atLeast and atMost should succeed",
+			input: "lengthy",
 			args: args{
-				p: Peek(Alpha1[string]()),
+				p: TakeWhileMN[string](3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "length",
+			wantRemaining: "y",
+		},
+		{
+			name:  "parsing input longer than atLeast and shorter than atMost should succeed",
+			input: "latin",
+			args: args{
+				p: TakeWhileMN[string](3, 6, IsAlpha),
+			},
+			wantErr:       false,
+			wantOutput:    "latin",
+			wantRemaining: "",
+		},
+		{
+			name:  "parsing too short input should fail",
+			input: "ed",
+			args: args{
+				p: TakeWhileMN[string](3, 6, IsAlpha),
 			},
 			wantErr:       true,
 			wantOutput:    "",
-			wantRemaining: "123;",
+			wantRemaining: "ed",
+		},
+		{
+			name:  "parsing with non-matching predicate should fail",
+			input: "12345",
+			args: args{
+				p: TakeWhileMN[string](3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "12345",
 		},
 	}
 	for _, tc := range testCases {
@@ -255,16 +264,48 @@ func TestPeek(t *testing.T) {
 	}
 }
 
-func BenchmarkPeek(b *testing.B) {
-	p := Peek(Alpha1[string]())
+func BenchmarkTakeWhileMN(b *testing.B) {
+	p := TakeWhileMN[string](3, 6, IsAlpha)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p("abcd;")
+		p("latin")
 	}
 }
 
-func TestRecognize(t *testing.T) {
+// TakeWhileOneOf parses any number of characters present in the
+// provided collection of runes.
+func TakeWhileOneOf[I Bytes](collection ...rune) Parser[I, I] {
+	index := make(map[rune]struct{}, len(collection))
+
+	for _, r := range collection {
+		index[r] = struct{}{}
+	}
+
+	expected := fmt.Sprintf("chars(%v)", string(collection))
+
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Failure[I, I](NewError(input, expected), input)
+		}
+
+		pos := 0
+		for ; pos < len(input); pos++ {
+			_, exists := index[rune(input[pos])]
+			if !exists {
+				if pos == 0 {
+					return Failure[I, I](NewError(input, expected), input)
+				}
+
+				break
+			}
+		}
+
+		return Success(input[:pos], input[pos:])
+	}
+}
+
+func TestTakeWhileOneOf(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
@@ -280,29 +321,19 @@ func TestRecognize(t *testing.T) {
 	}{
 		{
 			name:  "matching parser should succeed",
-			input: "123abc",
+			input: "abc123",
 			args: args{
-				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       false,
-			wantOutput:    "123abc",
-			wantRemaining: "",
+			wantOutput:    "abc",
+			wantRemaining: "123",
 		},
 		{
-			name:  "no prefix match should fail",
-			input: "abc",
-			args: args{
-				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
-			},
-			wantErr:       true,
-			wantOutput:    "",
-			wantRemaining: "abc",
-		},
-		{
-			name:  "no parser match should fail",
+			name:  "no match should fail",
 			input: "123",
 			args: args{
-				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -312,7 +343,7 @@ func TestRecognize(t *testing.T) {
 			name:  "empty input should fail",
 			input: "",
 			args: args{
-				p: Recognize(Pair(Digit1[string](), Alpha1[string]())),
+				p: TakeWhileOneOf[string]('a', 'b', 'c'),
 			},
 			wantErr:       true,
 			wantOutput:    "",
@@ -341,57 +372,59 @@ func TestRecognize(t *testing.T) {
 	}
 }
 
-func BenchmarkRecognize(b *testing.B) {
-	p := Recognize(Pair(Digit1[string](), Alpha1[string]()))
+func BenchmarkTakeWhileOneOf(b *testing.B) {
+	p := TakeWhileOneOf[string]('a', 'b', 'c')
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p("123abc")
+		p("abc123")
 	}
 }
 
-func TestAssign(t *testing.T) {
+func TestToken(t *testing.T) {
 	t.Parallel()
 
-	type args struct {
-		p Parser[string, int]
-	}
 	testCases := []struct {
 		name          string
-		args          args
+		parser        Parser[string, string]
 		input         string
 		wantErr       bool
-		wantOutput    int
+		wantOutput    string
 		wantRemaining string
 	}{
 		{
-			name:  "matching parser should succeed",
-			input: "abcd",
-			args: args{
-				p: Assign(1234, Alpha1[string]()),
-			},
+			name:          "parsing a token from an input starting with it should succeed",
+			parser:        Token[string]("Bonjour"),
+			input:         "Bonjour tout le monde",
 			wantErr:       false,
-			wantOutput:    1234,
-			wantRemaining: "",
+			wantOutput:    "Bonjour",
+			wantRemaining: " tout le monde",
 		},
 		{
-			name:  "non matching parser should fail",
-			input: "123abcd;",
-			args: args{
-				p: Assign(1234, Alpha1[string]()),
-			},
+			name:          "parsing a token from an non-matching input should fail",
+			parser:        Token[string]("Bonjour"),
+			input:         "Hello tout le monde",
 			wantErr:       true,
-			wantOutput:    0,
-			wantRemaining: "123abcd;",
+			wantOutput:    "",
+			wantRemaining: "Hello tout le monde",
+		},
+		{
+			name:          "parsing a token from an empty input should fail",
+			parser:        Token[string]("Bonjour"),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
 		},
 	}
+
 	for _, tc := range testCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			gotResult := tc.args.p(tc.input)
+			gotResult := tc.parser(tc.input)
 			if (gotResult.Err != nil) != tc.wantErr {
 				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
 			}
@@ -407,11 +440,10 @@ func TestAssign(t *testing.T) {
 	}
 }
 
-func BenchmarkAssign(b *testing.B) {
-	p := Assign(1234, Alpha1[string]())
+func BenchmarkToken(b *testing.B) {
+	parser := Token[string]("Bonjour")
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p("abcd")
+		parser("Bonjour tout le monde")
 	}
 }
