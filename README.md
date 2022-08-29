@@ -83,7 +83,10 @@ func fromHex(input string) (uint8, error) {
 
 ```
 
-More examples can be found in the [examples](./examples) directory.
+More examples can be found in the [examples](./examples) directory:
+- [Parsing a simple CSV file](./examples/csv)
+- [Parsing Redis' RESP protocol](./examples/redis)
+- [Parsing hexadecimal color codes](./examples/hexcolor)
 
 
 ## Documentation

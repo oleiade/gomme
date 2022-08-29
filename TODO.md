@@ -9,6 +9,7 @@
 - [ ] Add an `ErrInfiniteLoop` (`Many0`)
 - [ ] Sort Out Fatal/Non-Fatal errors (distinguish whether a parser failed in an expected manner, or if the whole parsing should be interrupted)
 - [ ] Reduce Int8/Int64 allocations (their parsers could be somewhat simplified?)
+- [ ] Add combinator to parse whitespace (+ helper for multispace0/1?)
 - [x] Add Benchmarks
 - [x] Make sure the Failure messages are properly cased
 - [x] Rename `p` parser arguments to `parse` for clearer code
@@ -22,6 +23,7 @@
 - [ ] Rename `Sequence` to `List`?
 - [ ] Introduce `SeparatedList` as a result of previous?
 - [ ] Rename `Satisfy` to `Satisfies`?
+- [ ] Create `bytes.go` file to distinguish from characters
 
 ## Track
 
