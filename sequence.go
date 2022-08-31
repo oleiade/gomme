@@ -9,8 +9,8 @@ func Delimited[I Bytes, OP, O, OS any](prefix Parser[I, OP], parser Parser[I, O]
 	}
 }
 
-// Pair applies two parsers and returns a Result containing a slice of
-// size 2 as its output.
+// Pair applies two parsers and returns a Result containing a pair container holding
+// the resulting values.
 func Pair[I Bytes, LO, RO any, LP Parser[I, LO], RP Parser[I, RO]](
 	leftParser LP, rightParser RP,
 ) Parser[I, PairContainer[LO, RO]] {

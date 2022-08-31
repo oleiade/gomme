@@ -1,6 +1,9 @@
 package gomme
 
 // Count runs the provided parser `count` times.
+//
+// If the provided parser cannot be successfully applied `count` times, the operation
+// fails and the Result will contain an error.
 func Count[I Bytes, O any](parse Parser[I, O], count uint) Parser[I, []O] {
 	return func(input I) Result[[]O, I] {
 		if len(input) == 0 || count == 0 {
