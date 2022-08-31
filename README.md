@@ -13,21 +13,16 @@ for both textual and binary formats. It extensively uses the recent introduction
 language to offer flexibility in how combinators can be mixed and matched to produce the desired output while
 providing as much compile-time type safety as possible.
 
-## Why would you want to use Gomme?
-
-Parser combinators arguably come with a steep learning curve, but they are a potent tool for parsing textual and binary formats. We believe that the benefits of parser combinators outweigh the cost of learning them, and that's why we built Gomme. Our intuition is that most of the cost of learning them is due to the lack of good documentation and examples, and that's why we are trying to provide comprehensive documentation and a large set of examples.
-
-In practice, we have found that parser combinators are intuitive and flexible and can be used to build parsers for various formats. They are also straightforward to test and can be used to create very easy-to-maintain and extend parsers. We have also found that parser combinators are very fast and can be used to build parsers that can turn out as fast as hand-written.
-## Table of Content
-
 <!-- toc -->
 
 - [Example](#example)
+- [Why would you want to use Gomme?](why-would-you-want-to-use-gomme)
 - [Documentation](#documentation)
 - [Installation](#installation)
 - [FAQ](#faq)
 - [Acknowledgements](#acknowledgements)
 - [Authors](#authors)
+
 
 ## Example
 
@@ -90,6 +85,12 @@ More examples can be found in the [examples](./examples) directory:
 - [Parsing Redis' RESP protocol](./examples/redis)
 - [Parsing hexadecimal color codes](./examples/hexcolor)
 
+## Why would you want to use Gomme?
+
+Parser combinators arguably come with a steep learning curve, but they are a potent tool for parsing textual and binary formats. We believe that the benefits of parser combinators outweigh the cost of learning them, and that's why we built Gomme. Our intuition is that most of the cost of learning them is due to the lack of good documentation and examples, and that's why we are trying to provide comprehensive documentation and a large set of examples.
+
+In practice, we have found that parser combinators are intuitive and flexible and can be used to build parsers for various formats. They are also straightforward to test and can be used to create very easy-to-maintain and extend parsers. We have also found that parser combinators are very fast and can be used to build parsers that can turn out as fast as hand-written.
+## Table of Content
 
 ## Documentation
 
