@@ -16,7 +16,7 @@ providing as much compile-time type safety as possible.
 <!-- toc -->
 
 - [Example](#example)
-- [Why would you want to use Gomme?](why-would-you-want-to-use-gomme)
+- [Why would you want to use Gomme?](#why-would-you-want-to-use-gomme)
 - [Documentation](#documentation)
 - [Installation](#installation)
 - [FAQ](#faq)
