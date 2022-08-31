@@ -2,10 +2,12 @@
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Build Status](https://github.com/oleiade/gomme/actions/workflows/go.yml/badge.svg)](https://github.com/oleiade/gomme/actions/workflows/go.yml)
-[![Coverage Status](https://coveralls.io/repos/github/oleiade/gomme/badge.svg?branch=main)](https://coveralls.io/github/gomme/actions?branch=main)
+[![Go Documentation](https://pkg.go.dev/badge/github.com/oleiade/gomme#pkg-types.svg)](https://pkg.go.dev/github.com/oleiade/gomme#pkg-types)
+[![Go Report Card](https://goreportcard.com/badge/github.com/oleiade/gomme)](https://goreportcard.com/report/github.com/oleiade/gomme)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/oleiade/gomme)
 
 Gomme is a parser combinator library for the Go programming language.
+
 It provides a toolkit for developers to build reliable, fast, flexible, and easy-to-develop and maintain parsers
 for both textual and binary formats. It extensively uses the recent introduction of Generics in the Go programming
 language to offer flexibility in how combinators can be mixed and matched to produce the desired output while
@@ -91,7 +93,7 @@ More examples can be found in the [examples](./examples) directory:
 
 ## Documentation
 
-[Documentation](https://linktodocumentation)
+[Documentation](https://pkg.go.dev/github.com/oleiade/gomme)
 
 
 
