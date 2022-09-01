@@ -9,6 +9,7 @@
 - [ ] Add combinator to parse whitespace (+ helper for multispace0/1?)
 - [ ] Refactor TakeWhileOneOf to be "just" TakeWhile
 - [ ] Refactor space to be of the form space0 and space1
+- [ ] Rename `LF` to `Newline`
 - [X] Document Recognize as explicitly as possible
 - [X] Add Examples
 - [x] Add Benchmarks
