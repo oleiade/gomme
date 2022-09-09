@@ -13,11 +13,11 @@ func ParseJSON(input string) (JSONValue, error) {
 
 type JSONValue struct {
 	Kind   JSONKind
-	Null   *JSONNull
-	Bool   *JSONBool
-	String *JSONString
-	Number *JSONNumber
-	Object *JSONObject
+	Null   JSONNull
+	Bool   JSONBool
+	String JSONString
+	Number JSONNumber
+	Object JSONObject
 	Array  []*JSONValue
 }
 
@@ -36,10 +36,28 @@ func Value[O JSONValue]() gomme.Parser[string, JSONValue] {
 	return gomme.Preceded(
 		separator(),
 		gomme.Alternative(
-			gomme.Assign(JSONValue{Kind: JSONNullKind, Null: &JSONNull{}}, Null()),
-			// gomme.Map(Null(), nullValue),
-			// gomme.Map(Boolean(), booleanValue),
-			// gomme.Map(String(), stringValue),
+			// Objects
+			gomme.Map(Object(), func(input JSONObject) (JSONValue, error) {
+				return JSONValue{Kind: JSONObjectKind, Object: input}, nil
+			}),
+
+			// Strings
+			gomme.Map(String(), func(input JSONString) (JSONValue, error) {
+				return JSONValue{Kind: JSONStringKind, String: input}, nil
+			}),
+
+			// Numbers
+			gomme.Map(Number(), func(input JSONNumber) (JSONValue, error) {
+				return JSONValue{Kind: JSONNumberKind, Number: input}, nil
+			}),
+
+			// Boolean
+			gomme.Map(Boolean(), func(input JSONBool) (JSONValue, error) {
+				return JSONValue{Kind: JSONBoolKind, Bool: input}, nil
+			}),
+
+			// Null
+			gomme.Assign(JSONValue{Kind: JSONNullKind, Null: JSONNull{}}, Null()),
 		),
 	)
 }
@@ -51,7 +69,7 @@ func Null() gomme.Parser[string, JSONNull] {
 }
 
 func nullValue(input JSONNull) (JSONValue, error) {
-	return JSONValue{Kind: JSONNullKind, Null: &JSONNull{}}, nil
+	return JSONValue{Kind: JSONNullKind, Null: JSONNull{}}, nil
 }
 
 type JSONBool bool
@@ -61,10 +79,6 @@ func Boolean() gomme.Parser[string, JSONBool] {
 		gomme.Assign(JSONBool(true), gomme.Token[string]("true")),
 		gomme.Assign(JSONBool(false), gomme.Token[string]("false")),
 	)
-}
-
-func booleanValue(input JSONBool) (JSONValue, error) {
-	return JSONValue{Kind: JSONBoolKind, Bool: &input}, nil
 }
 
 type JSONString string
@@ -78,12 +92,31 @@ func String() gomme.Parser[string, JSONString] {
 	)
 }
 
-func stringValue(input JSONString) (JSONValue, error) {
-	return JSONValue{Kind: JSONStringKind, String: &input}, nil
+type JSONNumber float64
+
+func Number() gomme.Parser[string, JSONNumber] {
+	return gomme.Map(
+		gomme.Number[string](),
+		func(input float64) (JSONNumber, error) {
+			return JSONNumber(input), nil
+		},
+	)
 }
 
-type JSONNumber float64
-type JSONObject map[string]JSONValue
+type JSONObject map[JSONString]JSONValue
+
+func Object() gomme.Parser[string, JSONObject] {
+	return gomme.Delimited(
+		gomme.Token[string]("{"),
+		gomme.Map(gomme.Token[string]("abc:123"), func(input string) (JSONObject, error) {
+			obj := make(map[JSONString]JSONValue)
+			obj[JSONString("abc")] = JSONValue{Kind: JSONNumberKind, Number: JSONNumber(123)}
+			return JSONObject(obj), nil
+		}),
+		gomme.Token[string]("}"),
+	)
+}
+
 type JSONArray []JSONValue
 
 type keyvalue struct {
@@ -91,15 +124,8 @@ type keyvalue struct {
 	Value JSONValue
 }
 
-// func KeyValue() gomme.Parser[string, keyvalue] {
-// 	gomme.SeparatedPair(
-// 		gomme.Preceded(separated, String()),
-// 		gomme.Preceded(separated, )
-// 	)
-// }
-
 func separator() gomme.Parser[string, string] {
-	return gomme.TakeWhileOneOf[string]('\t', '\r', '\n', ' ')
+	return gomme.Whitespace0[string]()
 }
 
 func parseString() gomme.Parser[string, string] {
