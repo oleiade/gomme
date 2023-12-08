@@ -1,9 +1,7 @@
 package gomme
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 )
 
 // Char parses a single character and matches it with
@@ -221,6 +219,54 @@ func HexDigit1[I Bytes]() Parser[I, I] {
 	}
 }
 
+// WhiteSpace0 parses zero or more whitespace characters: ' ', '\t', '\n', '\r'.
+// In the cases where the input is empty, or no terminating character is found, the parser
+// returns the input as is.
+func Whitespace0[I Bytes]() Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Success(input, input)
+		}
+
+		lastPos := 0
+		for idx := 0; idx < len(input); idx++ {
+			if !IsWhitespace(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
+			}
+
+			lastPos++
+		}
+
+		return Success(input[:lastPos], input[lastPos:])
+	}
+}
+
+// Whitespace1 parses one or more whitespace characters: ' ', '\t', '\n', '\r'.
+// In the cases where the input doesn't hold enough data, or a terminating character
+// is found before any matching ones were, the parser returns an error result.
+func Whitespace1[I Bytes]() Parser[I, I] {
+	return func(input I) Result[I, I] {
+		if len(input) == 0 {
+			return Failure[I, I](NewError(input, "WhiteSpace1"), input)
+		}
+
+		if !IsWhitespace(rune(input[0])) {
+			return Failure[I, I](NewError(input, "WhiteSpace1"), input)
+		}
+
+		lastPos := 1
+		for idx := 1; idx < len(input); idx++ {
+			if !IsWhitespace(rune(input[idx])) {
+				return Success(input[:idx], input[idx:])
+			}
+
+			lastPos++
+		}
+
+		return Success(input[:lastPos], input[lastPos:])
+	}
+}
+
 // LF parses a line feed `\n` character.
 func LF[I Bytes]() Parser[I, rune] {
 	return func(input I) Result[rune, I] {
@@ -305,19 +351,6 @@ func Tab[I Bytes]() Parser[I, rune] {
 		}
 
 		return Success(rune(input[0]), input[1:])
-	}
-}
-
-// Token parses a token from the input, and returns the part of the input that
-// matched the token.
-// If the token could not be found, the parser returns an error result.
-func Token[I Bytes](token string) Parser[I, I] {
-	return func(input I) Result[I, I] {
-		if !strings.HasPrefix(string(input), token) {
-			return Failure[I, I](NewError(input, fmt.Sprintf("Token(%s)", token)), input)
-		}
-
-		return Success(input[:len(token)], input[len(token):])
 	}
 }
 
@@ -412,4 +445,8 @@ func IsHexDigit(c rune) bool {
 // IsControl returns true if the rune is a control character.
 func IsControl(c rune) bool {
 	return c < 32 || c == 127
+}
+
+func IsWhitespace(c rune) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }

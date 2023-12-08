@@ -668,6 +668,257 @@ func BenchmarkHexDigit1(b *testing.B) {
 	}
 }
 
+func TestWhitespace0(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, string]
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:          "parsing single whitespace from single ' ' input should succeed",
+			parser:        Whitespace0[string](),
+			input:         " ",
+			wantErr:       false,
+			wantOutput:    " ",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\t' input should succeed",
+			parser:        Whitespace0[string](),
+			input:         "\t",
+			wantErr:       false,
+			wantOutput:    "\t",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\n' input should succeed",
+			parser:        Whitespace0[string](),
+			input:         "\n",
+			wantErr:       false,
+			wantOutput:    "\n",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\r' input should succeed",
+			parser:        Whitespace0[string](),
+			input:         "\r",
+			wantErr:       false,
+			wantOutput:    "\r",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing multiple whitespace chars from multiple whitespace chars input should succeed",
+			parser:        Whitespace0[string](),
+			input:         " \t\n\r",
+			wantErr:       false,
+			wantOutput:    " \t\n\r",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing multiple whitespace chars from multiple whitespace chars with suffix input should succeed",
+			parser:        Whitespace0[string](),
+			input:         " \t\n\rabc",
+			wantErr:       false,
+			wantOutput:    " \t\n\r",
+			wantRemaining: "abc",
+		},
+		{
+			name:          "parsing an empty input should succeed",
+			parser:        Whitespace0[string](),
+			input:         "",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing a single non-whitespace char input should succeed",
+			parser:        Whitespace0[string](),
+			input:         "a",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "a",
+		},
+		{
+			name:          "parsing input starting with a non-whitespace char should succeed",
+			parser:        Whitespace0[string](),
+			input:         "a \t\n\r",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "a \t\n\r",
+		},
+		{
+			name:          "parsing non-whitespace chars should succeed",
+			parser:        Whitespace0[string](),
+			input:         "ghi",
+			wantErr:       false,
+			wantOutput:    "",
+			wantRemaining: "ghi",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func BenchmarkWhitespace0(b *testing.B) {
+	b.ReportAllocs()
+	parser := Whitespace0[string]()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser(" \t\n\r")
+	}
+}
+
+func TestWhitespace1(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		parser        Parser[string, string]
+		input         string
+		wantErr       bool
+		wantOutput    string
+		wantRemaining string
+	}{
+		{
+			name:          "parsing single whitespace from single ' ' input should succeed",
+			parser:        Whitespace1[string](),
+			input:         " ",
+			wantErr:       false,
+			wantOutput:    " ",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\t' input should succeed",
+			parser:        Whitespace1[string](),
+			input:         "\t",
+			wantErr:       false,
+			wantOutput:    "\t",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\n' input should succeed",
+			parser:        Whitespace1[string](),
+			input:         "\n",
+			wantErr:       false,
+			wantOutput:    "\n",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing single whitespace from single '\r' input should succeed",
+			parser:        Whitespace1[string](),
+			input:         "\r",
+			wantErr:       false,
+			wantOutput:    "\r",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing multiple whitespace chars from multiple whitespace chars input should succeed",
+			parser:        Whitespace1[string](),
+			input:         " \t\n\r",
+			wantErr:       false,
+			wantOutput:    " \t\n\r",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing multiple whitespace chars from multiple whitespace chars with suffix input should succeed",
+			parser:        Whitespace1[string](),
+			input:         " \t\n\rabc",
+			wantErr:       false,
+			wantOutput:    " \t\n\r",
+			wantRemaining: "abc",
+		},
+		{
+			name:          "parsing an empty input should fail",
+			parser:        Whitespace1[string](),
+			input:         "",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+		{
+			name:          "parsing a single non-whitespace char input should fail",
+			parser:        Whitespace1[string](),
+			input:         "a",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "a",
+		},
+		{
+			name:          "parsing input starting with a non-whitespace char should fail",
+			parser:        Whitespace1[string](),
+			input:         "a \t\n\r",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "a \t\n\r",
+		},
+		{
+			name:          "parsing non-whitespace chars should fail",
+			parser:        Whitespace1[string](),
+			input:         "ghi",
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "ghi",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotResult := tc.parser(tc.input)
+			if (gotResult.Err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
+			}
+
+			if gotResult.Output != tc.wantOutput {
+				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
+			}
+
+			if gotResult.Remaining != tc.wantRemaining {
+				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
+			}
+		})
+	}
+}
+
+func BenchmarkWhitespace1(b *testing.B) {
+	b.ReportAllocs()
+
+	parser := Whitespace1[string]()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parser(" \t\n\r")
+	}
+}
+
 func TestAlphanumeric0(t *testing.T) {
 	t.Parallel()
 
@@ -1484,73 +1735,6 @@ func BenchmarkTab(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		parser("\t")
-	}
-}
-
-func TestToken(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name          string
-		parser        Parser[string, string]
-		input         string
-		wantErr       bool
-		wantOutput    string
-		wantRemaining string
-	}{
-		{
-			name:          "parsing a token from an input starting with it should succeed",
-			parser:        Token[string]("Bonjour"),
-			input:         "Bonjour tout le monde",
-			wantErr:       false,
-			wantOutput:    "Bonjour",
-			wantRemaining: " tout le monde",
-		},
-		{
-			name:          "parsing a token from an non-matching input should fail",
-			parser:        Token[string]("Bonjour"),
-			input:         "Hello tout le monde",
-			wantErr:       true,
-			wantOutput:    "",
-			wantRemaining: "Hello tout le monde",
-		},
-		{
-			name:          "parsing a token from an empty input should fail",
-			parser:        Token[string]("Bonjour"),
-			input:         "",
-			wantErr:       true,
-			wantOutput:    "",
-			wantRemaining: "",
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			gotResult := tc.parser(tc.input)
-			if (gotResult.Err != nil) != tc.wantErr {
-				t.Errorf("got error %v, want error %v", gotResult.Err, tc.wantErr)
-			}
-
-			if gotResult.Output != tc.wantOutput {
-				t.Errorf("got output %v, want output %v", gotResult.Output, tc.wantOutput)
-			}
-
-			if gotResult.Remaining != tc.wantRemaining {
-				t.Errorf("got remaining %v, want remaining %v", gotResult.Remaining, tc.wantRemaining)
-			}
-		})
-	}
-}
-
-func BenchmarkToken(b *testing.B) {
-	parser := Token[string]("Bonjour")
-
-	for i := 0; i < b.N; i++ {
-		parser("Bonjour tout le monde")
 	}
 }
 
