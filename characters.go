@@ -444,7 +444,7 @@ func IsHexDigit(c rune) bool {
 
 // IsControl returns true if the rune is a control character.
 func IsControl(c rune) bool {
-	return c < 32 || c == 127
+	return (c >= 0 && c < 32) || c == 127
 }
 
 func IsWhitespace(c rune) bool {

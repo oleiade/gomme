@@ -1781,6 +1781,22 @@ func TestInt64(t *testing.T) {
 			wantOutput:    -123,
 			wantRemaining: "abc",
 		},
+		{
+			name:          "parsing overflowing integer should fail",
+			parser:        Int64[string](),
+			input:         "9223372036854775808", // max int64 + 1
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "9223372036854775808",
+		},
+		{
+			name:          "parsing integer with invalid leading sign should fail",
+			parser:        Int64[string](),
+			input:         "!127",
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "!127",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1856,6 +1872,22 @@ func TestInt8(t *testing.T) {
 			wantOutput:    -123,
 			wantRemaining: "abc",
 		},
+		{
+			name:          "parsing overflowing integer should fail",
+			parser:        Int8[string](),
+			input:         "128", // max int8 + 1
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "128",
+		},
+		{
+			name:          "parsing integer with invalid leading sign should fail",
+			parser:        Int8[string](),
+			input:         "!127",
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "!127",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1916,6 +1948,14 @@ func TestUInt8(t *testing.T) {
 			wantRemaining: "abc",
 		},
 		{
+			name:          "parsing overflowing integer should fail",
+			parser:        UInt8[string](),
+			input:         "256", // max uint8 + 1
+			wantErr:       true,
+			wantOutput:    0,
+			wantRemaining: "256",
+		},
+		{
 			name:          "parsing empty input should succeed",
 			parser:        UInt8[string](),
 			input:         "",
@@ -1952,5 +1992,68 @@ func BenchmarkUInt8(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		parser("253")
+	}
+}
+
+func TestIsControl(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		input rune
+		want  bool
+	}{
+		{
+			name:  "control char should satisfy constraint",
+			input: rune(0x00),
+			want:  true,
+		},
+		{
+			name:  "space char should not satisfy constraint",
+			input: rune(' '),
+			want:  false,
+		},
+		{
+			name:  "digit char should not satisfy constraint",
+			input: rune('1'),
+			want:  false,
+		},
+		{
+			name:  "alpha char should not satisfy constraint",
+			input: rune('a'),
+			want:  false,
+		},
+		{
+			name:  "non-printable char should satisfy constraint",
+			input: rune(0x7F),
+			want:  true,
+		},
+		{
+			name:  "non-ASCII char should not satisfy constraint",
+			input: rune(0xFF),
+			want:  false,
+		},
+		{
+			name:  "non-char should not satisfy constraint",
+			input: rune(-1),
+			want:  false,
+		},
+		{
+			name:  "non-char should not satisfy constraint",
+			input: rune(0x110000),
+			want:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if gotOutput := IsControl(tc.input); gotOutput != tc.want {
+				t.Errorf("got output %v, want output %v", gotOutput, tc.want)
+			}
+		})
 	}
 }
