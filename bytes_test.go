@@ -222,6 +222,16 @@ func TestTakeWhileMN(t *testing.T) {
 			wantRemaining: "",
 		},
 		{
+			name:  "parsing empty input should fail",
+			input: "",
+			args: args{
+				p: TakeWhileMN[string](3, 6, IsAlpha),
+			},
+			wantErr:       true,
+			wantOutput:    "",
+			wantRemaining: "",
+		},
+		{
 			name:  "parsing too short input should fail",
 			input: "ed",
 			args: args{
