@@ -30,29 +30,29 @@ type Parser[Input Bytes, Output any] func(input Input) Result[Output, Input]
 
 // Success creates a Result with a output set from
 // the result of a successful parsing.
-func Success[O any, Remaining Bytes](output O, r Remaining) Result[O, Remaining] {
-	return Result[O, Remaining]{output, nil, r}
+func Success[Output any, Remaining Bytes](output Output, r Remaining) Result[Output, Remaining] {
+	return Result[Output, Remaining]{output, nil, r}
 }
 
 // Failure creates a Result with an error set from
 // the result of a failed parsing.
 // TODO: The Error type could be generic too
-func Failure[I Bytes, O any](err *Error[I], input I) Result[O, I] {
-	var output O
-	return Result[O, I]{output, err, input}
+func Failure[Input Bytes, Output any](err *Error[Input], input Input) Result[Output, Input] {
+	var output Output
+	return Result[Output, Input]{output, err, input}
 }
 
 // Map applies a function to the result of a parser.
-func Map[I Bytes, PO any, MO any](parse Parser[I, PO], fn func(PO) (MO, error)) Parser[I, MO] {
-	return func(input I) Result[MO, I] {
+func Map[Input Bytes, ParserOutput any, MapperOutput any](parse Parser[Input, ParserOutput], fn func(ParserOutput) (MapperOutput, error)) Parser[Input, MapperOutput] {
+	return func(input Input) Result[MapperOutput, Input] {
 		res := parse(input)
 		if res.Err != nil {
-			return Failure[I, MO](NewError(input, "Map"), input)
+			return Failure[Input, MapperOutput](NewError(input, "Map"), input)
 		}
 
 		output, err := fn(res.Output)
 		if err != nil {
-			return Failure[I, MO](NewError(input, err.Error()), input)
+			return Failure[Input, MapperOutput](NewError(input, err.Error()), input)
 		}
 
 		return Success(output, res.Remaining)
@@ -64,8 +64,8 @@ func Map[I Bytes, PO any, MO any](parse Parser[I, PO], fn func(PO) (MO, error)) 
 //
 // N.B: unless a FatalError is encountered, Optional will ignore
 // any parsing failures and errors.
-func Optional[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
-	return func(input I) Result[O, I] {
+func Optional[Input Bytes, Output any](parse Parser[Input, Output]) Parser[Input, Output] {
+	return func(input Input) Result[Output, Input] {
 		result := parse(input)
 		if result.Err != nil && !result.Err.IsFatal() {
 			result.Err = nil
@@ -77,11 +77,11 @@ func Optional[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
 
 // Peek tries to apply the provided parser without consuming any input.
 // It effectively allows to look ahead in the input.
-func Peek[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
-	return func(input I) Result[O, I] {
+func Peek[Input Bytes, Output any](parse Parser[Input, Output]) Parser[Input, Output] {
+	return func(input Input) Result[Output, Input] {
 		result := parse(input)
 		if result.Err != nil {
-			return Failure[I, O](result.Err, input)
+			return Failure[Input, Output](result.Err, input)
 		}
 
 		return Success(result.Output, input)
@@ -90,11 +90,11 @@ func Peek[I Bytes, O any](parse Parser[I, O]) Parser[I, O] {
 
 // Recognize returns the consumed input as the produced value when
 // the provided parser succeeds.
-func Recognize[I Bytes, O any](parse Parser[I, O]) Parser[I, I] {
-	return func(input I) Result[I, I] {
+func Recognize[Input Bytes, Output any](parse Parser[Input, Output]) Parser[Input, Input] {
+	return func(input Input) Result[Input, Input] {
 		result := parse(input)
 		if result.Err != nil {
-			return Failure[I, I](result.Err, input)
+			return Failure[Input, Input](result.Err, input)
 		}
 
 		return Success(input[:len(input)-len(result.Remaining)], result.Remaining)
@@ -103,11 +103,11 @@ func Recognize[I Bytes, O any](parse Parser[I, O]) Parser[I, I] {
 
 // Assign returns the provided value if the parser succeeds, otherwise
 // it returns an error result.
-func Assign[I Bytes, O1, O2 any](value O1, parse Parser[I, O2]) Parser[I, O1] {
-	return func(input I) Result[O1, I] {
+func Assign[Input Bytes, Output1, Output2 any](value Output1, parse Parser[Input, Output2]) Parser[Input, Output1] {
+	return func(input Input) Result[Output1, Input] {
 		result := parse(input)
 		if result.Err != nil {
-			return Failure[I, O1](result.Err, input)
+			return Failure[Input, Output1](result.Err, input)
 		}
 
 		return Success(value, result.Remaining)

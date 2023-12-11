@@ -4,8 +4,8 @@ package gomme
 // succeeds.
 //
 // If none of the parsers succeed, this combinator produces an error Result.
-func Alternative[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, O] {
-	return func(input I) Result[O, I] {
+func Alternative[Input Bytes, Output any](parsers ...Parser[Input, Output]) Parser[Input, Output] {
+	return func(input Input) Result[Output, Input] {
 		for _, parse := range parsers {
 			result := parse(input)
 			if result.Err == nil {
@@ -13,6 +13,6 @@ func Alternative[I Bytes, O any](parsers ...Parser[I, O]) Parser[I, O] {
 			}
 		}
 
-		return Failure[I, O](NewError(input, "Alternative"), input)
+		return Failure[Input, Output](NewError(input, "Alternative"), input)
 	}
 }

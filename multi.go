@@ -4,18 +4,18 @@ package gomme
 //
 // If the provided parser cannot be successfully applied `count` times, the operation
 // fails and the Result will contain an error.
-func Count[I Bytes, O any](parse Parser[I, O], count uint) Parser[I, []O] {
-	return func(input I) Result[[]O, I] {
+func Count[Input Bytes, Output any](parse Parser[Input, Output], count uint) Parser[Input, []Output] {
+	return func(input Input) Result[[]Output, Input] {
 		if len(input) == 0 || count == 0 {
-			return Failure[I, []O](NewError(input, "Count"), input)
+			return Failure[Input, []Output](NewError(input, "Count"), input)
 		}
 
-		outputs := make([]O, 0, int(count))
+		outputs := make([]Output, 0, int(count))
 		remaining := input
 		for i := 0; uint(i) < count; i++ {
 			result := parse(remaining)
 			if result.Err != nil {
-				return Failure[I, []O](result.Err, input)
+				return Failure[Input, []Output](result.Err, input)
 			}
 
 			remaining = result.Remaining
@@ -32,9 +32,9 @@ func Count[I Bytes, O any](parse Parser[I, O], count uint) Parser[I, []O] {
 // Note that Many0 will succeed even if the parser fails to match at all. It will
 // however fail if the provided parser accepts empty inputs (such as `Digit0`, or
 // `Alpha0`) in order to prevent infinite loops.
-func Many0[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
-	return func(input I) Result[[]O, I] {
-		results := []O{}
+func Many0[Input Bytes, Output any](parse Parser[Input, Output]) Parser[Input, []Output] {
+	return func(input Input) Result[[]Output, Input] {
+		results := []Output{}
 
 		remaining := input
 		for {
@@ -46,7 +46,7 @@ func Many0[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(res.Remaining) == len(remaining) {
-				return Failure[I, []O](NewError(input, "Many0"), input)
+				return Failure[Input, []Output](NewError(input, "Many0"), input)
 			}
 
 			results = append(results, res.Output)
@@ -61,20 +61,20 @@ func Many0[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 //
 // Note that Many1 will fail if the provided parser accepts empty
 // inputs (such as `Digit0`, or `Alpha0`) in order to prevent infinite loops.
-func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
-	return func(input I) Result[[]O, I] {
+func Many1[Input Bytes, Output any](parse Parser[Input, Output]) Parser[Input, []Output] {
+	return func(input Input) Result[[]Output, Input] {
 		first := parse(input)
 		if first.Err != nil {
-			return Failure[I, []O](first.Err, input)
+			return Failure[Input, []Output](first.Err, input)
 		}
 
 		// Checking for infinite loops, if nothing was consumed,
 		// the provided parser would make us go around in circles.
 		if len(first.Remaining) == len(input) {
-			return Failure[I, []O](NewError(input, "Many1"), input)
+			return Failure[Input, []Output](NewError(input, "Many1"), input)
 		}
 
-		results := []O{first.Output}
+		results := []Output{first.Output}
 		remaining := first.Remaining
 
 		for {
@@ -86,7 +86,7 @@ func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(res.Remaining) == len(remaining) {
-				return Failure[I, []O](NewError(input, "Many1"), input)
+				return Failure[Input, []Output](NewError(input, "Many1"), input)
 			}
 
 			results = append(results, res.Output)
@@ -106,9 +106,12 @@ func Many1[I Bytes, O any](parse Parser[I, O]) Parser[I, []O] {
 // from the provided main parser, it will succeed even if the separator parser fails to
 // match at all. It will however fail if the provided separator parser accepts empty
 // inputs in order to prevent infinite loops.
-func SeparatedList0[I Bytes, O any, S Separator](parse Parser[I, O], separator Parser[I, S]) Parser[I, []O] {
-	return func(input I) Result[[]O, I] {
-		results := []O{}
+func SeparatedList0[Input Bytes, Output any, S Separator](
+	parse Parser[Input, Output],
+	separator Parser[Input, S],
+) Parser[Input, []Output] {
+	return func(input Input) Result[[]Output, Input] {
+		results := []Output{}
 
 		res := parse(input)
 		if res.Err != nil {
@@ -118,7 +121,7 @@ func SeparatedList0[I Bytes, O any, S Separator](parse Parser[I, O], separator P
 		// Checking for infinite loops, if nothing was consumed,
 		// the provided parser would make us go around in circles.
 		if len(res.Remaining) == len(input) {
-			return Failure[I, []O](NewError(input, "SeparatedList0"), input)
+			return Failure[Input, []Output](NewError(input, "SeparatedList0"), input)
 		}
 
 		results = append(results, res.Output)
@@ -133,7 +136,7 @@ func SeparatedList0[I Bytes, O any, S Separator](parse Parser[I, O], separator P
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(separatorResult.Remaining) == len(remaining) {
-				return Failure[I, []O](NewError(input, "SeparatedList0"), input)
+				return Failure[Input, []Output](NewError(input, "SeparatedList0"), input)
 			}
 
 			parserResult := parse(separatorResult.Remaining)
@@ -156,19 +159,22 @@ func SeparatedList0[I Bytes, O any, S Separator](parse Parser[I, O], separator P
 // Because the `SeparatedList1` is really looking to produce a list of elements resulting
 // from the provided main parser, it will succeed even if the separator parser fails to
 // match at all.
-func SeparatedList1[I Bytes, O any, S Separator](parse Parser[I, O], separator Parser[I, S]) Parser[I, []O] {
-	return func(input I) Result[[]O, I] {
-		results := []O{}
+func SeparatedList1[Input Bytes, Output any, S Separator](
+	parse Parser[Input, Output],
+	separator Parser[Input, S],
+) Parser[Input, []Output] {
+	return func(input Input) Result[[]Output, Input] {
+		results := []Output{}
 
 		res := parse(input)
 		if res.Err != nil {
-			return Failure[I, []O](res.Err, input)
+			return Failure[Input, []Output](res.Err, input)
 		}
 
 		// Checking for infinite loops, if nothing was consumed,
 		// the provided parser would make us go around in circles.
 		if len(res.Remaining) == len(input) {
-			return Failure[I, []O](NewError(input, "SeparatedList0"), input)
+			return Failure[Input, []Output](NewError(input, "SeparatedList0"), input)
 		}
 
 		results = append(results, res.Output)
@@ -183,7 +189,7 @@ func SeparatedList1[I Bytes, O any, S Separator](parse Parser[I, O], separator P
 			// Checking for infinite loops, if nothing was consumed,
 			// the provided parser would make us go around in circles.
 			if len(separatorResult.Remaining) == len(remaining) {
-				return Failure[I, []O](NewError(input, "SeparatedList0"), input)
+				return Failure[Input, []Output](NewError(input, "SeparatedList0"), input)
 			}
 
 			parserResult := parse(separatorResult.Remaining)
