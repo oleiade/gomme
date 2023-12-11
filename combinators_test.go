@@ -1,6 +1,7 @@
 package gomme
 
 import (
+	"errors"
 	"strconv"
 	"testing"
 )
@@ -59,6 +60,18 @@ func TestMap(t *testing.T) {
 			wantErr:       true,
 			wantOutput:    TestStruct{},
 			wantRemaining: "abc\r\n",
+		},
+		{
+			name:  "failing mapper should fail",
+			input: "1abc\r\n",
+			args: args{
+				Map(Pair(Digit1[string](), TakeUntil(CRLF[string]())), func(p PairContainer[string, string]) (TestStruct, error) {
+					return TestStruct{}, errors.New("unexpected error")
+				}),
+			},
+			wantErr:       true,
+			wantOutput:    TestStruct{},
+			wantRemaining: "1abc\r\n",
 		},
 		{
 			name:  "empty input should fail",
