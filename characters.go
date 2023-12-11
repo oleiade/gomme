@@ -219,7 +219,7 @@ func HexDigit1[I Bytes]() Parser[I, I] {
 	}
 }
 
-// WhiteSpace0 parses zero or more whitespace characters: ' ', '\t', '\n', '\r'.
+// Whitespace0 parses zero or more whitespace characters: ' ', '\t', '\n', '\r'.
 // In the cases where the input is empty, or no terminating character is found, the parser
 // returns the input as is.
 func Whitespace0[I Bytes]() Parser[I, I] {
