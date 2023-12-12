@@ -1,5 +1,5 @@
-<h1 align="center">Gomme</h3>
-<h3 align="center">A parser combinator library for Go</h3>
+<p align="center"><img src="logo.png" alt="motus logo"/></p>
+<h1 align="center">A parser combinator library for Go</h1>
 
 <p align="center">
     <a href="https://choosealicense.com/licenses/mit/"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
@@ -18,6 +18,7 @@ With the power of Go's newly introduced Generics, Gomme gives you the flexibilit
 ## Table of content
 
 <!-- toc -->
+- [Table of content](#table-of-content)
 - [Getting started](#getting-started)
 - [Why Gomme?](#why-gomme)
 - [Examples](#examples)
