@@ -110,9 +110,10 @@ Once you get the hang of it, you'll find that Gomme's parser combinators are int
 ## Examples
 
 See Gomme in action with these handy examples:
+- [Parsing hexadecimal color codes](./examples/hexcolor)
 - [Parsing a simple CSV file](./examples/csv)
 - [Parsing Redis' RESP protocol](./examples/redis)
-- [Parsing hexadecimal color codes](./examples/hexcolor)
+- [Parsing JSON](./examples/json)
 
 ## Documentation
 
